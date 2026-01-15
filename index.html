@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Heavy Duty Log (Simple)</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background:#0b0c10; color:#e8eaed; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 20px; margin: 0 0 10px; }
+    .grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
+    @media (min-width: 900px){ .grid { grid-template-columns: 340px 1fr; } }
+    .card { background:#11131a; border:1px solid #222638; border-radius: 14px; padding: 12px; }
+    .row { display:flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    label { font-size: 12px; opacity: .85; display:block; margin-bottom: 4px; }
+    select, input, textarea, button {
+      background:#0f1220; color:#e8eaed; border:1px solid #2a3050; border-radius: 10px;
+      padding: 10px; font-size: 14px;
+    }
+    input, select { width: 100%; }
+    textarea { width: 100%; min-height: 60px; resize: vertical; }
+    button { cursor:pointer; }
+    button.primary { background:#1c2550; border-color:#2f3aa0; }
+    button.danger { background:#3a1020; border-color:#702040; }
+    .small { font-size: 12px; opacity: .8; }
+    .pill { display:inline-block; padding:6px 10px; border-radius:999px; background:#0f1220; border:1px solid #2a3050; font-size:12px; }
+    .plan h3 { margin: 0 0 8px; font-size: 14px; opacity:.9; }
+    .plan ul { margin: 0; padding-left: 18px; }
+    .plan li { margin: 6px 0; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #222638; padding: 10px 8px; vertical-align: top; }
+    th { text-align:left; font-size: 12px; opacity: .85; }
+    .muted { opacity:.7; }
+    .right { margin-left:auto; }
+    .hidden { display:none; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .toast { margin-top:10px; font-size:12px; opacity:.85; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Heavy Duty Log <span class="pill" id="nextDayPill">Next: Day A</span></h1>
+    <div class="grid">
+      <!-- Left: Plan + Entry -->
+      <div class="card">
+        <div class="row" style="justify-content:space-between;">
+          <div class="small muted">Simple. One line per exercise. Local save.</div>
+          <button id="btnSettings" title="Settings">⚙️</button>
+        </div>
+
+        <div class="plan card" style="margin-top:12px;">
+          <h3 id="planTitle">Plan — Day A (Chest & Back)</h3>
+          <ul id="planList"></ul>
+          <div class="small muted" style="margin-top:8px;">
+            Rule: compare only to last time you did the same day. Missed time = continue rotation.
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <div class="row">
+            <div style="flex: 1 1 120px;">
+              <label for="daySelect">Day</label>
+              <select id="daySelect">
+                <option value="A">Day A — Chest & Back</option>
+                <option value="B">Day B — Legs</option>
+                <option value="C">Day C — Delts & Arms</option>
+              </select>
+            </div>
+            <div style="flex: 1 1 160px;">
+              <label for="dateInput">Date</label>
+              <input id="dateInput" type="date" />
+            </div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <label for="exerciseSelect">Exercise</label>
+            <select id="exerciseSelect"></select>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <div style="flex: 1 1 120px;">
+              <label for="weightInput">Weight</label>
+              <input id="weightInput" inputmode="decimal" placeholder="e.g., 133" />
+            </div>
+            <div style="flex: 1 1 120px;">
+              <label for="repsInput">Reps</label>
+              <input id="repsInput" inputmode="numeric" placeholder="e.g., 2" />
+            </div>
+            <div style="flex: 1 1 140px;">
+              <label for="unitsSelect">Units</label>
+              <select id="unitsSelect">
+                <option value="lb">lb</option>
+                <option value="kg">kg</option>
+                <option value="bw">bw</option>
+                <option value="bw+">bw+</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <label for="notesInput">Notes (optional)</label>
+            <textarea id="notesInput" placeholder="e.g., clean reps, no back tightness"></textarea>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <button class="primary" id="btnAdd">Add to Log</button>
+            <button id="btnQuickLast">Use last entry for this exercise</button>
+            <span class="right small muted" id="lastComparison"></span>
+          </div>
+
+          <div class="toast" id="toast"></div>
+        </div>
+
+        <div class="card hidden" id="settingsPanel" style="margin-top:12px;">
+          <div class="row" style="justify-content:space-between;">
+            <strong>Settings</strong>
+            <button id="btnCloseSettings">✕</button>
+          </div>
+
+          <div style="margin-top:10px;">
+            <label>Default “Next Day” rotation</label>
+            <div class="small muted">App auto-suggests the next day based on your last logged day.</div>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <button id="btnExport">Export CSV</button>
+            <button class="danger" id="btnClear">Clear Log</button>
+          </div>
+
+          <div class="small muted" style="margin-top:10px;">
+            Data is stored locally in your browser (localStorage). Export CSV for backup.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right: Log -->
+      <div class="card">
+        <div class="row">
+          <strong>Log</strong>
+          <span class="right small muted" id="logCount"></span>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <input id="searchInput" placeholder="Search (exercise, notes, day)…" style="flex:1 1 auto;" />
+          <button id="btnToday">Today</button>
+          <button id="btnDeleteLast" class="danger" title="Delete last entry">Delete last</button>
+        </div>
+
+        <div style="margin-top:10px; overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:110px;">Date</th>
+                <th style="width:60px;">Day</th>
+                <th>Exercise</th>
+                <th style="width:120px;">Result</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody id="logBody"></tbody>
+          </table>
+        </div>
+
+        <div class="small muted" style="margin-top:10px;">
+          Tip: Your PR is simply beating your last entry for the same exercise (more reps at same weight, or more weight at same reps).
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // ---------- Plan (edit anytime) ----------
+  const PLAN = {
+    A: {
+      title: "Day A — Chest & Back",
+      exercises: [
+        "Cable Flye (pre-exhaust)",
+        "Incline Barbell Press (close grip)",
+        "Dumbbell Pullover",
+        "Weighted Pull-Ups (palms up)",
+        "Seated Cable Row (or Landmine Row)"
+      ]
+    },
+    B: {
+      title: "Day B — Legs",
+      exercises: [
+        "Squat (maintenance / spine-aware)",
+        "Dip-Belt Calf Raise"
+      ]
+    },
+    C: {
+      title: "Day C — Delts & Arms",
+      exercises: [
+        "Cable Lateral Raise",
+        "Barbell Curl (via cable) + Rest-Pause",
+        "Triceps Pressdown",
+        "Dips (bodyweight)"
+      ]
+    }
+  };
+
+  // ---------- Storage ----------
+  const KEY = "HD_LOG_V1";
+  const loadLog = () => {
+    try { return JSON.parse(localStorage.getItem(KEY) || "[]"); }
+    catch { return []; }
+  };
+  const saveLog = (arr) => localStorage.setItem(KEY, JSON.stringify(arr));
+
+  // ---------- Helpers ----------
+  const $ = (id) => document.getElementById(id);
+  const fmtDate = (iso) => iso || "";
+  const todayISO = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const parseNum = (s) => {
+    const n = Number(String(s).trim());
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const nextDay = (d) => (d === "A" ? "B" : d === "B" ? "C" : "A");
+
+  function bestGuessNextDay(log) {
+    if (!log.length) return "A";
+    const last = log[0]; // newest first in UI, but storage is append; we'll compute below properly
+    // Let's find actual last by timestamp
+    const lastEntry = [...log].sort((a,b)=> (b.ts||0)-(a.ts||0))[0];
+    return nextDay(lastEntry.day);
+  }
+
+  function toast(msg) {
+    $("toast").textContent = msg;
+    setTimeout(()=> { if ($("toast").textContent === msg) $("toast").textContent = ""; }, 2500);
+  }
+
+  function updatePlanUI(day) {
+    $("planTitle").textContent = PLAN[day].title;
+    $("planList").innerHTML = PLAN[day].exercises.map(x => `<li>${x}</li>`).join("");
+    // update exercise dropdown
+    $("exerciseSelect").innerHTML = PLAN[day].exercises.map(x => `<option value="${escapeHtml(x)}">${x}</option>`).join("");
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, (m) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
+
+  function renderLog(log) {
+    const q = $("searchInput").value.trim().toLowerCase();
+    const filtered = [...log].sort((a,b)=> (b.ts||0)-(a.ts||0)).filter(e => {
+      if (!q) return true;
+      const blob = `${e.date} ${e.day} ${e.exercise} ${e.notes||""} ${e.weight}${e.units}x${e.reps}`.toLowerCase();
+      return blob.includes(q);
+    });
+
+    $("logCount").textContent = `${filtered.length} entries`;
+    const rows = filtered.map(e => {
+      const result = `${e.units === "bw" ? "bw" : e.units === "bw+" ? `bw+${e.weight}` : e.weight}${e.units === "bw" ? "" : e.units === "bw+" ? "" : e.units} × ${e.reps}`;
+      return `
+        <tr>
+          <td class="mono">${fmtDate(e.date)}</td>
+          <td><span class="pill">${e.day}</span></td>
+          <td>${escapeHtml(e.exercise)}</td>
+          <td class="mono">${escapeHtml(result)}</td>
+          <td class="muted">${escapeHtml(e.notes || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    $("logBody").innerHTML = rows || `
+      <tr><td colspan="5" class="muted">No entries yet. Add your first set.</td></tr>
+    `;
+  }
+
+  function findLastForExercise(log, day, exercise) {
+    const sorted = [...log].sort((a,b)=> (b.ts||0)-(a.ts||0));
+    return sorted.find(e => e.day === day && e.exercise === exercise) || null;
+  }
+
+  function compareToLast(current, last) {
+    if (!last) return "No previous entry";
+    // Simple comparison: same units; if units differ, just show last
+    if (current.units !== last.units) return `Last: ${last.weight}${last.units} × ${last.reps}`;
+
+    const cw = current.units === "bw" ? 0 : Number(current.weight);
+    const lw = last.units === "bw" ? 0 : Number(last.weight);
+    const cr = Number(current.reps);
+    const lr = Number(last.reps);
+
+    // PR logic: more reps at same weight OR more weight at same reps
+    let verdict = "Matched last";
+    if (cw === lw && cr > lr) verdict = "PR: more reps";
+    else if (cr === lr && cw > lw) verdict = "PR: more weight";
+    else if (cw > lw && cr > lr) verdict = "PR: weight + reps";
+    else if (cw < lw && cr < lr) verdict = "Below last (okay if coming back)";
+    else verdict = `Last: ${last.weight}${last.units} × ${last.reps}`;
+
+    return verdict.startsWith("Last:") ? verdict : verdict + ` (Last: ${last.weight}${last.units} × ${last.reps})`;
+  }
+
+  function exportCSV(log) {
+    const header = ["date","day","exercise","weight","units","reps","notes"].join(",");
+    const lines = [...log].sort((a,b)=> (a.ts||0)-(b.ts||0)).map(e => {
+      const safe = (v) => `"${String(v ?? "").replace(/"/g,'""')}"`;
+      return [e.date, e.day, e.exercise, e.weight, e.units, e.reps, e.notes].map(safe).join(",");
+    });
+    return [header, ...lines].join("\n");
+  }
+
+  // ---------- Init ----------
+  let log = loadLog();
+
+  $("dateInput").value = todayISO();
+
+  const defaultDay = bestGuessNextDay(log);
+  $("daySelect").value = defaultDay;
+  updatePlanUI(defaultDay);
+
+  $("nextDayPill").textContent = `Next: Day ${defaultDay}`;
+
+  renderLog(log);
+
+  // Update suggested next day when log changes
+  function refreshNextDay() {
+    const nd = bestGuessNextDay(log);
+    $("nextDayPill").textContent = `Next: Day ${nd}`;
+  }
+
+  // ---------- Events ----------
+  $("daySelect").addEventListener("change", () => {
+    const day = $("daySelect").value;
+    updatePlanUI(day);
+    $("planTitle").textContent = PLAN[day].title;
+    $("planList").innerHTML = PLAN[day].exercises.map(x => `<li>${x}</li>`).join("");
+    $("lastComparison").textContent = "";
+  });
+
+  $("exerciseSelect").addEventListener("change", () => {
+    $("lastComparison").textContent = "";
+  });
+
+  $("btnToday").addEventListener("click", () => {
+    $("dateInput").value = todayISO();
+    toast("Date set to today.");
+  });
+
+  $("searchInput").addEventListener("input", () => renderLog(log));
+
+  $("btnAdd").addEventListener("click", () => {
+    const day = $("daySelect").value;
+    const date = $("dateInput").value || todayISO();
+    const exercise = $("exerciseSelect").value;
+    const units = $("unitsSelect").value;
+
+    const reps = parseNum($("repsInput").value);
+    if (!reps || reps <= 0) return toast("Enter reps (number).");
+
+    let weight = $("weightInput").value.trim();
+    if (units === "bw") {
+      weight = ""; // not needed
+    } else {
+      const w = parseNum(weight);
+      if (w === null || w < 0) return toast("Enter weight (number).");
+      weight = String(w);
+    }
+
+    const entry = {
+      ts: Date.now(),
+      date,
+      day,
+      exercise,
+      weight,
+      units,
+      reps: String(reps),
+      notes: $("notesInput").value.trim()
+    };
+
+    const last = findLastForExercise(log, day, exercise);
+    $("lastComparison").textContent = compareToLast(entry, last);
+
+    log.push(entry);
+    saveLog(log);
+    renderLog(log);
+    refreshNextDay();
+
+    // clear quick fields
+    $("repsInput").value = "";
+    $("notesInput").value = "";
+    toast("Saved.");
+  });
+
+  $("btnQuickLast").addEventListener("click", () => {
+    const day = $("daySelect").value;
+    const exercise = $("exerciseSelect").value;
+    const last = findLastForExercise(log, day, exercise);
+    if (!last) return toast("No previous entry for this exercise/day.");
+    $("unitsSelect").value = last.units;
+    $("weightInput").value = last.weight || "";
+    $("repsInput").value = last.reps || "";
+    $("notesInput").value = last.notes || "";
+    toast("Loaded last entry.");
+  });
+
+  $("btnDeleteLast").addEventListener("click", () => {
+    if (!log.length) return toast("Log is empty.");
+    // delete newest by timestamp
+    const sortedIdx = log
+      .map((e,i)=>({e,i}))
+      .sort((a,b)=>(b.e.ts||0)-(a.e.ts||0))[0].i;
+
+    const removed = log.splice(sortedIdx,1)[0];
+    saveLog(log);
+    renderLog(log);
+    refreshNextDay();
+    toast(`Deleted last: Day ${removed.day} — ${removed.exercise}`);
+  });
+
+  $("btnSettings").addEventListener("click", () => {
+    $("settingsPanel").classList.toggle("hidden");
+  });
+  $("btnCloseSettings").addEventListener("click", () => {
+    $("settingsPanel").classList.add("hidden");
+  });
+
+  $("btnClear").addEventListener("click", () => {
+    const ok = confirm("Clear the entire log? This cannot be undone.");
+    if (!ok) return;
+    log = [];
+    saveLog(log);
+    renderLog(log);
+    refreshNextDay();
+    toast("Log cleared.");
+  });
+
+  $("btnExport").addEventListener("click", () => {
+    const csv = exportCSV(log);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "heavy-duty-log.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast("Exported CSV.");
+  });
+
+})();
+</script>
+</body>
+</html>
