@@ -7,10 +7,10 @@
   <style>
     :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
     body { margin: 0; background:#0b0c10; color:#e8eaed; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 16px; }
+    .wrap { max-width: 1020px; margin: 0 auto; padding: 16px; }
     h1 { font-size: 20px; margin: 0 0 10px; }
     .grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
-    @media (min-width: 900px){ .grid { grid-template-columns: 340px 1fr; } }
+    @media (min-width: 980px){ .grid { grid-template-columns: 360px 1fr; } }
     .card { background:#11131a; border:1px solid #222638; border-radius: 14px; padding: 12px; }
     .row { display:flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     label { font-size: 12px; opacity: .85; display:block; margin-bottom: 4px; }
@@ -36,96 +36,342 @@
     .hidden { display:none; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
     .toast { margin-top:10px; font-size:12px; opacity:.85; }
+
+    .tabs { display:flex; gap:8px; flex-wrap:wrap; margin: 10px 0 0; }
+    .tabbtn { padding:8px 10px; border-radius:999px; }
+    .tabbtn.active { background:#1c2550; border-color:#2f3aa0; }
+
+    .kpi { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .kpi .box { background:#0f1220; border:1px solid #2a3050; border-radius: 12px; padding: 10px; }
+    .kpi .big { font-size: 18px; font-weight: 700; }
+    .hr { height:1px; background:#222638; margin: 10px 0; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Heavy Duty Log <span class="pill" id="nextDayPill">Next: Day A</span></h1>
+    <h1>
+      Heavy Duty Log
+      <span class="pill" id="nextDayPill">Next: Day A</span>
+      <span class="pill" id="nutritionPill">Nutrition: 0/2 shakes</span>
+    </h1>
+
     <div class="grid">
-      <!-- Left: Plan + Entry -->
+      <!-- Left: Tabs content -->
       <div class="card">
         <div class="row" style="justify-content:space-between;">
-          <div class="small muted">Simple. One line per exercise. Local save.</div>
+          <div class="small muted">Simple. Local save. Built for Heavy Duty.</div>
           <button id="btnSettings" title="Settings">⚙️</button>
         </div>
 
-        <div class="plan card" style="margin-top:12px;">
-          <h3 id="planTitle">Plan — Day A (Chest & Back)</h3>
-          <ul id="planList"></ul>
-          <div class="small muted" style="margin-top:8px;">
-            Rule: compare only to last time you did the same day. Missed time = continue rotation.
+        <div class="tabs">
+          <button class="tabbtn active" data-tab="plan">Plan</button>
+          <button class="tabbtn" data-tab="entry">Entry</button>
+          <button class="tabbtn" data-tab="nutrition">Nutrition</button>
+          <button class="tabbtn" data-tab="growth">Growth</button>
+        </div>
+
+        <!-- TAB: PLAN -->
+        <div id="tab_plan" style="margin-top:12px;">
+          <div class="plan card">
+            <h3 id="planTitle">Plan — Day A (Chest & Back)</h3>
+            <ul id="planList"></ul>
+            <div class="small muted" style="margin-top:8px;">
+              Rule: compare only to last time you did the same day. Missed time = continue rotation.
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:12px;">
+            <div class="row">
+              <div style="flex: 1 1 160px;">
+                <label for="daySelectPlan">Preview Day</label>
+                <select id="daySelectPlan">
+                  <option value="A">Day A — Chest & Back</option>
+                  <option value="B">Day B — Legs</option>
+                  <option value="C">Day C — Delts & Arms</option>
+                </select>
+              </div>
+              <div style="flex: 1 1 160px;">
+                <label>Recovery Gate</label>
+                <div class="small muted">Wait 3–4+ days as needed. Train when soreness is gone + spine feels quiet.</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="card" style="margin-top:12px;">
-          <div class="row">
-            <div style="flex: 1 1 120px;">
-              <label for="daySelect">Day</label>
-              <select id="daySelect">
-                <option value="A">Day A — Chest & Back</option>
-                <option value="B">Day B — Legs</option>
-                <option value="C">Day C — Delts & Arms</option>
-              </select>
+        <!-- TAB: ENTRY -->
+        <div id="tab_entry" class="hidden" style="margin-top:12px;">
+          <div class="card">
+            <div class="row">
+              <div style="flex: 1 1 120px;">
+                <label for="daySelect">Day</label>
+                <select id="daySelect">
+                  <option value="A">Day A — Chest & Back</option>
+                  <option value="B">Day B — Legs</option>
+                  <option value="C">Day C — Delts & Arms</option>
+                </select>
+              </div>
+              <div style="flex: 1 1 160px;">
+                <label for="dateInput">Date</label>
+                <input id="dateInput" type="date" />
+              </div>
             </div>
-            <div style="flex: 1 1 160px;">
-              <label for="dateInput">Date</label>
-              <input id="dateInput" type="date" />
+
+            <div style="margin-top:10px;">
+              <label for="exerciseSelect">Exercise</label>
+              <select id="exerciseSelect"></select>
             </div>
-          </div>
 
-          <div style="margin-top:10px;">
-            <label for="exerciseSelect">Exercise</label>
-            <select id="exerciseSelect"></select>
-          </div>
-
-          <div class="row" style="margin-top:10px;">
-            <div style="flex: 1 1 120px;">
-              <label for="weightInput">Weight</label>
-              <input id="weightInput" inputmode="decimal" placeholder="e.g., 133" />
+            <div class="row" style="margin-top:10px;">
+              <div style="flex: 1 1 120px;">
+                <label for="weightInput">Weight</label>
+                <input id="weightInput" inputmode="decimal" placeholder="e.g., 133" />
+              </div>
+              <div style="flex: 1 1 120px;">
+                <label for="repsInput">Reps</label>
+                <input id="repsInput" inputmode="numeric" placeholder="e.g., 2" />
+              </div>
+              <div style="flex: 1 1 140px;">
+                <label for="unitsSelect">Units</label>
+                <select id="unitsSelect">
+                  <option value="lb">lb</option>
+                  <option value="kg">kg</option>
+                  <option value="bw">bw</option>
+                  <option value="bw+">bw+</option>
+                </select>
+              </div>
             </div>
-            <div style="flex: 1 1 120px;">
-              <label for="repsInput">Reps</label>
-              <input id="repsInput" inputmode="numeric" placeholder="e.g., 2" />
+
+            <div style="margin-top:10px;">
+              <label for="notesInput">Notes (optional)</label>
+              <textarea id="notesInput" placeholder="e.g., clean reps, no back tightness"></textarea>
             </div>
-            <div style="flex: 1 1 140px;">
-              <label for="unitsSelect">Units</label>
-              <select id="unitsSelect">
-                <option value="lb">lb</option>
-                <option value="kg">kg</option>
-                <option value="bw">bw</option>
-                <option value="bw+">bw+</option>
-              </select>
+
+            <div class="row" style="margin-top:10px;">
+              <button class="primary" id="btnAdd">Add to Log</button>
+              <button id="btnQuickLast">Use last entry</button>
+              <span class="right small muted" id="lastComparison"></span>
             </div>
-          </div>
 
-          <div style="margin-top:10px;">
-            <label for="notesInput">Notes (optional)</label>
-            <textarea id="notesInput" placeholder="e.g., clean reps, no back tightness"></textarea>
+            <div class="toast" id="toast"></div>
           </div>
-
-          <div class="row" style="margin-top:10px;">
-            <button class="primary" id="btnAdd">Add to Log</button>
-            <button id="btnQuickLast">Use last entry for this exercise</button>
-            <span class="right small muted" id="lastComparison"></span>
-          </div>
-
-          <div class="toast" id="toast"></div>
         </div>
 
+        <!-- TAB: NUTRITION -->
+        <div id="tab_nutrition" class="hidden" style="margin-top:12px;">
+          <div class="card">
+            <strong>Targets (TRT + Heavy Duty + “I hate eating”)</strong>
+            <div class="small muted" style="margin-top:6px;">
+              Keep 2 meals/day. Add shakes to hit protein and calories without chewing.
+            </div>
+
+            <div class="kpi" style="margin-top:10px;">
+              <div class="box">
+                <div class="small muted">Calories</div>
+                <div class="big">2,250–2,350</div>
+                <div class="small muted">Adjust +150 only after 21 days flat.</div>
+              </div>
+              <div class="box">
+                <div class="small muted">Protein</div>
+                <div class="big">150–170 g</div>
+                <div class="small muted">Two meals + 1–2 shakes.</div>
+              </div>
+              <div class="box">
+                <div class="small muted">Carbs</div>
+                <div class="big">180–220 g</div>
+                <div class="small muted">Supports training performance.</div>
+              </div>
+              <div class="box">
+                <div class="small muted">Fat</div>
+                <div class="big">70–85 g</div>
+                <div class="small muted">Joints + satiety + health.</div>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <strong>Daily checklist</strong>
+            <div class="row" style="margin-top:8px;">
+              <label class="pill"><input type="checkbox" id="chkMeal1" /> Meal 1</label>
+              <label class="pill"><input type="checkbox" id="chkMeal2" /> Meal 2</label>
+              <label class="pill"><input type="checkbox" id="chkShake1" /> Shake #1 (Muscle Milk Pro 50)</label>
+              <label class="pill"><input type="checkbox" id="chkShake2" /> Shake #2 (training/low appetite)</label>
+              <label class="pill"><input type="checkbox" id="chkCreatine" /> Creatine</label>
+              <label class="pill"><input type="checkbox" id="chkWater" /> Water</label>
+            </div>
+
+            <div class="row" style="margin-top:10px;">
+              <button class="primary" id="btnSaveDaily">Save today</button>
+              <button id="btnResetDaily">Reset today</button>
+              <span class="right small muted" id="dailySavedText"></span>
+            </div>
+
+            <div class="hr"></div>
+
+            <strong>Weekly weigh-in</strong>
+            <div class="small muted">Once per week, same conditions (morning, after bathroom, before food).</div>
+
+            <div class="row" style="margin-top:10px;">
+              <div style="flex: 1 1 160px;">
+                <label for="weighDate">Date</label>
+                <input id="weighDate" type="date" />
+              </div>
+              <div style="flex: 1 1 160px;">
+                <label for="weighValue">Bodyweight</label>
+                <input id="weighValue" inputmode="decimal" placeholder="e.g., 160.4" />
+              </div>
+              <div style="flex: 1 1 200px;">
+                <label for="weighNote">Note (optional)</label>
+                <input id="weighNote" placeholder="sleep ok, appetite low, joints quiet" />
+              </div>
+              <div style="flex: 1 1 120px;">
+                <label>&nbsp;</label>
+                <button class="primary" id="btnAddWeigh">Add</button>
+              </div>
+            </div>
+
+            <div style="margin-top:10px; overflow:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:120px;">Date</th>
+                    <th style="width:120px;">Weight</th>
+                    <th>Note</th>
+                    <th style="width:90px;">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="weighBody"></tbody>
+              </table>
+            </div>
+
+            <div class="small muted" style="margin-top:10px;">
+              Goal trend: ~0.5–1.0 lb/week. If flat 3 weeks → add 1 extra shake on training days.
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:12px;">
+            <strong>Reminders (local)</strong>
+            <div class="small muted" style="margin-top:6px;">
+              These are <b>local notifications</b> (they work best while the page is open). True push requires a push provider/server.
+            </div>
+
+            <div class="row" style="margin-top:10px;">
+              <button id="btnEnableNotif">Enable Notifications</button>
+              <button id="btnTestNotif">Test Notification</button>
+            </div>
+
+            <div class="row" style="margin-top:10px;">
+              <div style="flex: 1 1 160px;">
+                <label for="reminderHours">Reminder interval (hours)</label>
+                <input id="reminderHours" inputmode="decimal" placeholder="e.g., 4" />
+              </div>
+              <div style="flex: 1 1 260px;">
+                <label for="reminderText">Reminder text</label>
+                <input id="reminderText" placeholder="Shake #1 + water" />
+              </div>
+              <div style="flex: 1 1 120px;">
+                <label>&nbsp;</label>
+                <button class="primary" id="btnStartReminder">Start</button>
+              </div>
+              <div style="flex: 1 1 120px;">
+                <label>&nbsp;</label>
+                <button class="danger" id="btnStopReminder">Stop</button>
+              </div>
+            </div>
+
+            <div class="small muted" id="reminderStatus" style="margin-top:8px;">Not running.</div>
+          </div>
+        </div>
+
+        <!-- TAB: GROWTH -->
+        <div id="tab_growth" class="hidden" style="margin-top:12px;">
+          <div class="card">
+            <strong>Natural TRT Growth Timeline (12 months)</strong>
+            <div class="small muted" style="margin-top:6px;">
+              You’re ~2 months in. This is the “do the basics perfectly” timeline.
+            </div>
+
+            <div class="hr"></div>
+
+            <div>
+              <strong>Months 0–2 (now)</strong>
+              <div class="small muted">
+                Stabilizing. Focus: consistent rotation + 1–2 shakes/day + weekly weigh-in.
+                Expect strength to lead size.
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div>
+              <strong>Months 3–4</strong>
+              <div class="small muted">
+                Visible fullness begins (upper chest/delts/arms). Weight: +2–4 lb.
+                PRs: bar speed + rep quality > load jumps.
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div>
+              <strong>Months 5–6</strong>
+              <div class="small muted">
+                First “it’s working” phase. Weight: +5–8 lb total.
+                Shirts fit different. Recovery gets more predictable.
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div>
+              <strong>Months 7–9</strong>
+              <div class="small muted">
+                Density phase. You look trained at rest. Tendons catch up.
+                Keep frequency low; keep form strict; keep calories steady.
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div>
+              <strong>Months 10–12 (decision point)</strong>
+              <div class="small muted">
+                If progress slows despite compliance, consider medical discussion around recovery support.
+                Do not add anything to “fix” under-eating or under-sleeping.
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <strong>Success checklist</strong>
+            <ul class="small muted" style="margin:8px 0 0; padding-left:18px;">
+              <li>Bodyweight trending up 0.5–1.0 lb/week</li>
+              <li>Same-day soreness resolves before next session</li>
+              <li>No next-morning spine tightness after training</li>
+              <li>Shakes used to “win” low appetite days</li>
+            </ul>
+          </div>
+
+          <div class="card" style="margin-top:12px;">
+            <strong>Your plan logic (simple)</strong>
+            <div class="small muted" style="margin-top:6px;">
+              Heavy Duty works by: massive stimulus → full recovery → adaptation.
+              Progress = beat your last entry for the same exercise/day.
+            </div>
+          </div>
+        </div>
+
+        <!-- SETTINGS -->
         <div class="card hidden" id="settingsPanel" style="margin-top:12px;">
           <div class="row" style="justify-content:space-between;">
             <strong>Settings</strong>
             <button id="btnCloseSettings">✕</button>
           </div>
 
-          <div style="margin-top:10px;">
-            <label>Default “Next Day” rotation</label>
-            <div class="small muted">App auto-suggests the next day based on your last logged day.</div>
-          </div>
-
           <div class="row" style="margin-top:10px;">
-            <button id="btnExport">Export CSV</button>
-            <button class="danger" id="btnClear">Clear Log</button>
+            <button id="btnExport">Export Lift Log CSV</button>
+            <button id="btnExportWeigh">Export Weigh-ins CSV</button>
+            <button class="danger" id="btnClear">Clear Lift Log</button>
+            <button class="danger" id="btnClearWeigh">Clear Weigh-ins</button>
           </div>
 
           <div class="small muted" style="margin-top:10px;">
@@ -138,7 +384,7 @@
       <!-- Right: Log -->
       <div class="card">
         <div class="row">
-          <strong>Log</strong>
+          <strong>Lift Log</strong>
           <span class="right small muted" id="logCount"></span>
         </div>
 
@@ -155,7 +401,7 @@
                 <th style="width:110px;">Date</th>
                 <th style="width:60px;">Day</th>
                 <th>Exercise</th>
-                <th style="width:120px;">Result</th>
+                <th style="width:140px;">Result</th>
                 <th>Notes</th>
               </tr>
             </thead>
@@ -164,7 +410,7 @@
         </div>
 
         <div class="small muted" style="margin-top:10px;">
-          Tip: Your PR is simply beating your last entry for the same exercise (more reps at same weight, or more weight at same reps).
+          Tip: PR = more reps at same weight, or more weight at same reps. “Cleaner reps” counts too.
         </div>
       </div>
     </div>
@@ -172,7 +418,7 @@
 
 <script>
 (() => {
-  // ---------- Plan (edit anytime) ----------
+  // ---------- Plan ----------
   const PLAN = {
     A: {
       title: "Day A — Chest & Back",
@@ -202,17 +448,20 @@
     }
   };
 
-  // ---------- Storage ----------
-  const KEY = "HD_LOG_V1";
-  const loadLog = () => {
-    try { return JSON.parse(localStorage.getItem(KEY) || "[]"); }
-    catch { return []; }
+  // ---------- Storage keys ----------
+  const KEY_LOG = "HD_LOG_V2";
+  const KEY_DAILY = "HD_DAILY_V1";
+  const KEY_WEIGH = "HD_WEIGH_V1";
+  const KEY_REM = "HD_REMINDER_V1";
+
+  const loadJSON = (k, fallback) => {
+    try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(fallback)); }
+    catch { return fallback; }
   };
-  const saveLog = (arr) => localStorage.setItem(KEY, JSON.stringify(arr));
+  const saveJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
   // ---------- Helpers ----------
   const $ = (id) => document.getElementById(id);
-  const fmtDate = (iso) => iso || "";
   const todayISO = () => {
     const d = new Date();
     const yyyy = d.getFullYear();
@@ -220,38 +469,31 @@
     const dd = String(d.getDate()).padStart(2,"0");
     return `${yyyy}-${mm}-${dd}`;
   };
-
   const parseNum = (s) => {
     const n = Number(String(s).trim());
     return Number.isFinite(n) ? n : null;
   };
-
   const nextDay = (d) => (d === "A" ? "B" : d === "B" ? "C" : "A");
-
-  function bestGuessNextDay(log) {
-    if (!log.length) return "A";
-    const last = log[0]; // newest first in UI, but storage is append; we'll compute below properly
-    // Let's find actual last by timestamp
-    const lastEntry = [...log].sort((a,b)=> (b.ts||0)-(a.ts||0))[0];
-    return nextDay(lastEntry.day);
-  }
+  const escapeHtml = (str) =>
+    String(str).replace(/[&<>"']/g, (m) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
 
   function toast(msg) {
     $("toast").textContent = msg;
     setTimeout(()=> { if ($("toast").textContent === msg) $("toast").textContent = ""; }, 2500);
   }
 
-  function updatePlanUI(day) {
-    $("planTitle").textContent = PLAN[day].title;
-    $("planList").innerHTML = PLAN[day].exercises.map(x => `<li>${x}</li>`).join("");
-    // update exercise dropdown
-    $("exerciseSelect").innerHTML = PLAN[day].exercises.map(x => `<option value="${escapeHtml(x)}">${x}</option>`).join("");
+  function bestGuessNextDay(log) {
+    if (!log.length) return "A";
+    const lastEntry = [...log].sort((a,b)=> (b.ts||0)-(a.ts||0))[0];
+    return nextDay(lastEntry.day);
   }
 
-  function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, (m) => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-    }[m]));
+  function updatePlanUI(day) {
+    $("planTitle").textContent = PLAN[day].title;
+    $("planList").innerHTML = PLAN[day].exercises.map(x => `<li>${escapeHtml(x)}</li>`).join("");
+    $("exerciseSelect").innerHTML = PLAN[day].exercises.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
   }
 
   function renderLog(log) {
@@ -263,12 +505,17 @@
     });
 
     $("logCount").textContent = `${filtered.length} entries`;
+
     const rows = filtered.map(e => {
-      const result = `${e.units === "bw" ? "bw" : e.units === "bw+" ? `bw+${e.weight}` : e.weight}${e.units === "bw" ? "" : e.units === "bw+" ? "" : e.units} × ${e.reps}`;
+      const result = (() => {
+        if (e.units === "bw") return `bw × ${e.reps}`;
+        if (e.units === "bw+") return `bw+${e.weight} × ${e.reps}`;
+        return `${e.weight}${e.units} × ${e.reps}`;
+      })();
       return `
         <tr>
-          <td class="mono">${fmtDate(e.date)}</td>
-          <td><span class="pill">${e.day}</span></td>
+          <td class="mono">${escapeHtml(e.date)}</td>
+          <td><span class="pill">${escapeHtml(e.day)}</span></td>
           <td>${escapeHtml(e.exercise)}</td>
           <td class="mono">${escapeHtml(result)}</td>
           <td class="muted">${escapeHtml(e.notes || "")}</td>
@@ -288,23 +535,20 @@
 
   function compareToLast(current, last) {
     if (!last) return "No previous entry";
-    // Simple comparison: same units; if units differ, just show last
     if (current.units !== last.units) return `Last: ${last.weight}${last.units} × ${last.reps}`;
 
-    const cw = current.units === "bw" ? 0 : Number(current.weight);
-    const lw = last.units === "bw" ? 0 : Number(last.weight);
+    const cw = current.units === "bw" ? 0 : Number(current.weight || 0);
+    const lw = last.units === "bw" ? 0 : Number(last.weight || 0);
     const cr = Number(current.reps);
     const lr = Number(last.reps);
 
-    // PR logic: more reps at same weight OR more weight at same reps
     let verdict = "Matched last";
     if (cw === lw && cr > lr) verdict = "PR: more reps";
     else if (cr === lr && cw > lw) verdict = "PR: more weight";
     else if (cw > lw && cr > lr) verdict = "PR: weight + reps";
-    else if (cw < lw && cr < lr) verdict = "Below last (okay if coming back)";
-    else verdict = `Last: ${last.weight}${last.units} × ${last.reps}`;
+    else if (cw < lw && cr < lr) verdict = "Below last (fine on comeback)";
 
-    return verdict.startsWith("Last:") ? verdict : verdict + ` (Last: ${last.weight}${last.units} × ${last.reps})`;
+    return verdict + ` (Last: ${last.weight}${last.units} × ${last.reps})`;
   }
 
   function exportCSV(log) {
@@ -316,44 +560,68 @@
     return [header, ...lines].join("\n");
   }
 
-  // ---------- Init ----------
-  let log = loadLog();
+  function exportWeighCSV(weigh) {
+    const header = ["date","weight","note"].join(",");
+    const lines = [...weigh].sort((a,b)=> (a.ts||0)-(b.ts||0)).map(e => {
+      const safe = (v) => `"${String(v ?? "").replace(/"/g,'""')}"`;
+      return [e.date, e.weight, e.note].map(safe).join(",");
+    });
+    return [header, ...lines].join("\n");
+  }
 
+  // ---------- State ----------
+  let log = loadJSON(KEY_LOG, []);
+  let weigh = loadJSON(KEY_WEIGH, []);
+  let daily = loadJSON(KEY_DAILY, {}); // keyed by ISO date
+  let reminder = loadJSON(KEY_REM, { running:false, intervalMs:0, text:"" });
+  let reminderTimer = null;
+
+  // ---------- Init ----------
   $("dateInput").value = todayISO();
+  $("weighDate").value = todayISO();
 
   const defaultDay = bestGuessNextDay(log);
   $("daySelect").value = defaultDay;
+  $("daySelectPlan").value = defaultDay;
   updatePlanUI(defaultDay);
 
   $("nextDayPill").textContent = `Next: Day ${defaultDay}`;
 
   renderLog(log);
+  renderWeigh();
+  loadDailyUI();
+  refreshNutritionPill();
 
-  // Update suggested next day when log changes
-  function refreshNextDay() {
-    const nd = bestGuessNextDay(log);
-    $("nextDayPill").textContent = `Next: Day ${nd}`;
-  }
+  // ---------- Tabs ----------
+  document.querySelectorAll(".tabbtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tabbtn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
 
-  // ---------- Events ----------
+      const tab = btn.getAttribute("data-tab");
+      ["plan","entry","nutrition","growth"].forEach(t => {
+        $("tab_"+t).classList.toggle("hidden", t !== tab);
+      });
+    });
+  });
+
+  // ---------- Plan preview ----------
+  $("daySelectPlan").addEventListener("change", () => {
+    updatePlanUI($("daySelectPlan").value);
+  });
+
+  // ---------- Entry day change ----------
   $("daySelect").addEventListener("change", () => {
-    const day = $("daySelect").value;
-    updatePlanUI(day);
-    $("planTitle").textContent = PLAN[day].title;
-    $("planList").innerHTML = PLAN[day].exercises.map(x => `<li>${x}</li>`).join("");
+    updatePlanUI($("daySelect").value);
     $("lastComparison").textContent = "";
   });
 
-  $("exerciseSelect").addEventListener("change", () => {
-    $("lastComparison").textContent = "";
-  });
+  $("searchInput").addEventListener("input", () => renderLog(log));
 
   $("btnToday").addEventListener("click", () => {
     $("dateInput").value = todayISO();
     toast("Date set to today.");
   });
-
-  $("searchInput").addEventListener("input", () => renderLog(log));
 
   $("btnAdd").addEventListener("click", () => {
     const day = $("daySelect").value;
@@ -366,7 +634,7 @@
 
     let weight = $("weightInput").value.trim();
     if (units === "bw") {
-      weight = ""; // not needed
+      weight = "";
     } else {
       const w = parseNum(weight);
       if (w === null || w < 0) return toast("Enter weight (number).");
@@ -388,11 +656,12 @@
     $("lastComparison").textContent = compareToLast(entry, last);
 
     log.push(entry);
-    saveLog(log);
+    saveJSON(KEY_LOG, log);
     renderLog(log);
-    refreshNextDay();
 
-    // clear quick fields
+    const nd = bestGuessNextDay(log);
+    $("nextDayPill").textContent = `Next: Day ${nd}`;
+
     $("repsInput").value = "";
     $("notesInput").value = "";
     toast("Saved.");
@@ -412,48 +681,223 @@
 
   $("btnDeleteLast").addEventListener("click", () => {
     if (!log.length) return toast("Log is empty.");
-    // delete newest by timestamp
     const sortedIdx = log
       .map((e,i)=>({e,i}))
       .sort((a,b)=>(b.e.ts||0)-(a.e.ts||0))[0].i;
 
     const removed = log.splice(sortedIdx,1)[0];
-    saveLog(log);
+    saveJSON(KEY_LOG, log);
     renderLog(log);
-    refreshNextDay();
+
+    const nd = bestGuessNextDay(log);
+    $("nextDayPill").textContent = `Next: Day ${nd}`;
     toast(`Deleted last: Day ${removed.day} — ${removed.exercise}`);
   });
 
-  $("btnSettings").addEventListener("click", () => {
-    $("settingsPanel").classList.toggle("hidden");
-  });
-  $("btnCloseSettings").addEventListener("click", () => {
-    $("settingsPanel").classList.add("hidden");
-  });
-
-  $("btnClear").addEventListener("click", () => {
-    const ok = confirm("Clear the entire log? This cannot be undone.");
-    if (!ok) return;
-    log = [];
-    saveLog(log);
-    renderLog(log);
-    refreshNextDay();
-    toast("Log cleared.");
-  });
+  // ---------- Settings ----------
+  $("btnSettings").addEventListener("click", () => $("settingsPanel").classList.toggle("hidden"));
+  $("btnCloseSettings").addEventListener("click", () => $("settingsPanel").classList.add("hidden"));
 
   $("btnExport").addEventListener("click", () => {
     const csv = exportCSV(log);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    downloadText(csv, "heavy-duty-lift-log.csv", "text/csv;charset=utf-8");
+  });
+
+  $("btnExportWeigh").addEventListener("click", () => {
+    const csv = exportWeighCSV(weigh);
+    downloadText(csv, "heavy-duty-weighins.csv", "text/csv;charset=utf-8");
+  });
+
+  $("btnClear").addEventListener("click", () => {
+    const ok = confirm("Clear the entire LIFT log? This cannot be undone.");
+    if (!ok) return;
+    log = [];
+    saveJSON(KEY_LOG, log);
+    renderLog(log);
+    const nd = bestGuessNextDay(log);
+    $("nextDayPill").textContent = `Next: Day ${nd}`;
+    toast("Lift log cleared.");
+  });
+
+  $("btnClearWeigh").addEventListener("click", () => {
+    const ok = confirm("Clear the entire WEIGH-IN log? This cannot be undone.");
+    if (!ok) return;
+    weigh = [];
+    saveJSON(KEY_WEIGH, weigh);
+    renderWeigh();
+    toast("Weigh-ins cleared.");
+  });
+
+  function downloadText(text, filename, mime) {
+    const blob = new Blob([text], { type: mime });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "heavy-duty-log.csv";
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    toast("Exported CSV.");
+    toast("Exported.");
+  }
+
+  // ---------- Nutrition daily ----------
+  function dayKey() { return todayISO(); }
+
+  function loadDailyUI() {
+    const k = dayKey();
+    const d = daily[k] || {};
+    $("chkMeal1").checked = !!d.meal1;
+    $("chkMeal2").checked = !!d.meal2;
+    $("chkShake1").checked = !!d.shake1;
+    $("chkShake2").checked = !!d.shake2;
+    $("chkCreatine").checked = !!d.creatine;
+    $("chkWater").checked = !!d.water;
+    $("dailySavedText").textContent = d.savedAt ? `Saved: ${new Date(d.savedAt).toLocaleTimeString()}` : "";
+  }
+
+  function refreshNutritionPill() {
+    const k = dayKey();
+    const d = daily[k] || {};
+    const shakes = (d.shake1 ? 1 : 0) + (d.shake2 ? 1 : 0);
+    $("nutritionPill").textContent = `Nutrition: ${shakes}/2 shakes`;
+  }
+
+  $("btnSaveDaily").addEventListener("click", () => {
+    const k = dayKey();
+    daily[k] = {
+      meal1: $("chkMeal1").checked,
+      meal2: $("chkMeal2").checked,
+      shake1: $("chkShake1").checked,
+      shake2: $("chkShake2").checked,
+      creatine: $("chkCreatine").checked,
+      water: $("chkWater").checked,
+      savedAt: Date.now()
+    };
+    saveJSON(KEY_DAILY, daily);
+    loadDailyUI();
+    refreshNutritionPill();
+    toast("Saved nutrition for today.");
   });
+
+  $("btnResetDaily").addEventListener("click", () => {
+    const ok = confirm("Reset today's checklist?");
+    if (!ok) return;
+    const k = dayKey();
+    delete daily[k];
+    saveJSON(KEY_DAILY, daily);
+    loadDailyUI();
+    refreshNutritionPill();
+    toast("Reset.");
+  });
+
+  // ---------- Weigh-ins ----------
+  function renderWeigh() {
+    const sorted = [...weigh].sort((a,b)=> (b.ts||0)-(a.ts||0));
+    $("weighBody").innerHTML = sorted.length ? sorted.map((e, idx) => `
+      <tr>
+        <td class="mono">${escapeHtml(e.date)}</td>
+        <td class="mono">${escapeHtml(e.weight)}</td>
+        <td class="muted">${escapeHtml(e.note || "")}</td>
+        <td><button class="danger" data-del="${e.ts}">Delete</button></td>
+      </tr>
+    `).join("") : `<tr><td colspan="4" class="muted">No weigh-ins yet.</td></tr>`;
+
+    document.querySelectorAll("[data-del]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const ts = Number(btn.getAttribute("data-del"));
+        weigh = weigh.filter(w => w.ts !== ts);
+        saveJSON(KEY_WEIGH, weigh);
+        renderWeigh();
+        toast("Deleted weigh-in.");
+      });
+    });
+  }
+
+  $("btnAddWeigh").addEventListener("click", () => {
+    const date = $("weighDate").value || todayISO();
+    const w = parseNum($("weighValue").value);
+    if (w === null || w <= 0) return toast("Enter bodyweight (number).");
+    const note = $("weighNote").value.trim();
+
+    weigh.push({ ts: Date.now(), date, weight: String(w), note });
+    saveJSON(KEY_WEIGH, weigh);
+    renderWeigh();
+
+    $("weighValue").value = "";
+    $("weighNote").value = "";
+    toast("Weigh-in added.");
+  });
+
+  // ---------- Local notifications (not push) ----------
+  $("btnEnableNotif").addEventListener("click", async () => {
+    if (!("Notification" in window)) return toast("Notifications not supported on this browser.");
+    const perm = await Notification.requestPermission();
+    toast(perm === "granted" ? "Notifications enabled." : "Notifications denied.");
+  });
+
+  $("btnTestNotif").addEventListener("click", () => {
+    sendLocalNotif("Heavy Duty", "Test notification. You're locked in.");
+  });
+
+  function sendLocalNotif(title, body) {
+    if (!("Notification" in window)) return toast("Notifications not supported.");
+    if (Notification.permission !== "granted") return toast("Enable notifications first.");
+    try {
+      new Notification(title, { body });
+      toast("Notification sent.");
+    } catch {
+      toast("Notification blocked by browser settings.");
+    }
+  }
+
+  function stopReminder() {
+    if (reminderTimer) clearInterval(reminderTimer);
+    reminderTimer = null;
+    reminder.running = false;
+    saveJSON(KEY_REM, reminder);
+    $("reminderStatus").textContent = "Not running.";
+  }
+
+  function startReminder(intervalMs, text) {
+    stopReminder();
+    reminder.running = true;
+    reminder.intervalMs = intervalMs;
+    reminder.text = text;
+    saveJSON(KEY_REM, reminder);
+
+    reminderTimer = setInterval(() => {
+      sendLocalNotif("Heavy Duty Reminder", text || "Shake + water.");
+    }, intervalMs);
+
+    $("reminderStatus").textContent = `Running every ${Math.round(intervalMs/360000)/10} hours: ${text || "Shake + water."}`;
+  }
+
+  $("btnStartReminder").addEventListener("click", () => {
+    const hrs = parseNum($("reminderHours").value);
+    if (hrs === null || hrs <= 0) return toast("Enter reminder interval in hours.");
+    const text = $("reminderText").value.trim() || "Shake #1 + water";
+    startReminder(hrs * 60 * 60 * 1000, text);
+    toast("Reminder started (works best while page is open).");
+  });
+
+  $("btnStopReminder").addEventListener("click", () => {
+    stopReminder();
+    toast("Reminder stopped.");
+  });
+
+  // Restore reminder if previously running (best effort)
+  if (reminder.running && reminder.intervalMs > 0) {
+    startReminder(reminder.intervalMs, reminder.text);
+  } else {
+    $("reminderStatus").textContent = "Not running.";
+  }
+
+  // Keep nutrition pill current if date changes at midnight while open
+  setInterval(() => {
+    loadDailyUI();
+    refreshNutritionPill();
+  }, 60 * 1000);
 
 })();
 </script>
