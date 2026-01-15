@@ -10,7 +10,7 @@
     .wrap { max-width: 1020px; margin: 0 auto; padding: 16px; }
     h1 { font-size: 20px; margin: 0 0 10px; }
     .grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
-    @media (min-width: 980px){ .grid { grid-template-columns: 360px 1fr; } }
+    @media (min-width: 980px){ .grid { grid-template-columns: 380px 1fr; } }
     .card { background:#11131a; border:1px solid #222638; border-radius: 14px; padding: 12px; }
     .row { display:flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     label { font-size: 12px; opacity: .85; display:block; margin-bottom: 4px; }
@@ -19,15 +19,12 @@
       padding: 10px; font-size: 14px;
     }
     input, select { width: 100%; }
-    textarea { width: 100%; min-height: 60px; resize: vertical; }
+    textarea { width: 100%; min-height: 56px; resize: vertical; }
     button { cursor:pointer; }
     button.primary { background:#1c2550; border-color:#2f3aa0; }
     button.danger { background:#3a1020; border-color:#702040; }
     .small { font-size: 12px; opacity: .8; }
     .pill { display:inline-block; padding:6px 10px; border-radius:999px; background:#0f1220; border:1px solid #2a3050; font-size:12px; }
-    .plan h3 { margin: 0 0 8px; font-size: 14px; opacity:.9; }
-    .plan ul { margin: 0; padding-left: 18px; }
-    .plan li { margin: 6px 0; }
     table { width:100%; border-collapse: collapse; }
     th, td { border-bottom: 1px solid #222638; padding: 10px 8px; vertical-align: top; }
     th { text-align:left; font-size: 12px; opacity: .85; }
@@ -36,15 +33,18 @@
     .hidden { display:none; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
     .toast { margin-top:10px; font-size:12px; opacity:.85; }
-
     .tabs { display:flex; gap:8px; flex-wrap:wrap; margin: 10px 0 0; }
     .tabbtn { padding:8px 10px; border-radius:999px; }
     .tabbtn.active { background:#1c2550; border-color:#2f3aa0; }
-
     .kpi { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .kpi .box { background:#0f1220; border:1px solid #2a3050; border-radius: 12px; padding: 10px; }
     .kpi .big { font-size: 18px; font-weight: 700; }
     .hr { height:1px; background:#222638; margin: 10px 0; }
+
+    .mini { background:#0f1220; border:1px solid #2a3050; border-radius: 12px; padding: 10px; }
+    .badge { padding: 6px 10px; border-radius: 999px; border: 1px solid #2a3050; background:#0f1220; font-size:12px; }
+    .ok { border-color:#2f3aa0; }
+    .warn { border-color:#705020; }
   </style>
 </head>
 <body>
@@ -56,10 +56,10 @@
     </h1>
 
     <div class="grid">
-      <!-- Left: Tabs content -->
+      <!-- LEFT -->
       <div class="card">
         <div class="row" style="justify-content:space-between;">
-          <div class="small muted">Simple. Local save. Built for Heavy Duty.</div>
+          <div class="small muted">Auto-fill last. Auto-progress suggestions. Cadence coach (4 down / 2 up).</div>
           <button id="btnSettings" title="Settings">⚙️</button>
         </div>
 
@@ -72,15 +72,7 @@
 
         <!-- TAB: PLAN -->
         <div id="tab_plan" style="margin-top:12px;">
-          <div class="plan card">
-            <h3 id="planTitle">Plan — Day A (Chest & Back)</h3>
-            <ul id="planList"></ul>
-            <div class="small muted" style="margin-top:8px;">
-              Rule: compare only to last time you did the same day. Missed time = continue rotation.
-            </div>
-          </div>
-
-          <div class="card" style="margin-top:12px;">
+          <div class="card">
             <div class="row">
               <div style="flex: 1 1 160px;">
                 <label for="daySelectPlan">Preview Day</label>
@@ -90,10 +82,26 @@
                   <option value="C">Day C — Delts & Arms</option>
                 </select>
               </div>
-              <div style="flex: 1 1 160px;">
+              <div style="flex: 1 1 180px;">
                 <label>Recovery Gate</label>
                 <div class="small muted">Wait 3–4+ days as needed. Train when soreness is gone + spine feels quiet.</div>
               </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="row">
+              <div style="flex:1 1 auto;">
+                <strong id="planTitle">Plan — Day A (Chest & Back)</strong>
+                <ul id="planList" class="small muted" style="margin:8px 0 0; padding-left:18px;"></ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="mini" style="margin-top:12px;">
+            <div class="small muted">
+              PR logic: beat the last entry for the same exercise/day (reps at same weight or weight at same reps).
+              “Clean/controlled” unlocks progression suggestions.
             </div>
           </div>
         </div>
@@ -121,6 +129,22 @@
               <select id="exerciseSelect"></select>
             </div>
 
+            <!-- Auto-fill + suggestion panel -->
+            <div class="mini" style="margin-top:10px;">
+              <div class="row">
+                <span class="badge" id="lastBadge">Last: —</span>
+                <span class="badge ok" id="targetBadge">Target: —</span>
+                <span class="badge warn" id="nextBadge">Next (if clean max): —</span>
+              </div>
+              <div class="small muted" style="margin-top:6px;">
+                Auto-fills your last result. If you hit the top of the rep range <b>clean</b>, it suggests the next weight automatically.
+              </div>
+              <div class="row" style="margin-top:8px;">
+                <button id="btnApplySuggested">Apply suggested target</button>
+                <button id="btnUseLast">Load last</button>
+              </div>
+            </div>
+
             <div class="row" style="margin-top:10px;">
               <div style="flex: 1 1 120px;">
                 <label for="weightInput">Weight</label>
@@ -141,6 +165,44 @@
               </div>
             </div>
 
+            <div class="row" style="margin-top:10px;">
+              <label class="pill" style="margin:0;">
+                <input type="checkbox" id="chkClean" />
+                Clean + controlled (no cheat reps)
+              </label>
+              <span class="right small muted" id="lastComparison"></span>
+            </div>
+
+            <!-- Cadence coach -->
+            <div class="mini" style="margin-top:10px;">
+              <strong>Cadence Coach</strong>
+              <div class="small muted" style="margin-top:6px;">
+                Tap Start and follow the cues: <b>4 seconds down</b>, <b>2 seconds up</b>, rep counted for you.
+                (Turn your media volume up.)
+              </div>
+
+              <div class="row" style="margin-top:10px;">
+                <div style="flex: 1 1 120px;">
+                  <label for="cadDown">Down (sec)</label>
+                  <input id="cadDown" inputmode="numeric" value="4" />
+                </div>
+                <div style="flex: 1 1 120px;">
+                  <label for="cadUp">Up (sec)</label>
+                  <input id="cadUp" inputmode="numeric" value="2" />
+                </div>
+                <div style="flex: 1 1 140px;">
+                  <label for="cadReps">Reps to cue</label>
+                  <input id="cadReps" inputmode="numeric" value="8" />
+                </div>
+              </div>
+
+              <div class="row" style="margin-top:10px;">
+                <button class="primary" id="btnCadStart">Start</button>
+                <button id="btnCadStop">Stop</button>
+                <span class="right mono" id="cadStatus">Idle</span>
+              </div>
+            </div>
+
             <div style="margin-top:10px;">
               <label for="notesInput">Notes (optional)</label>
               <textarea id="notesInput" placeholder="e.g., clean reps, no back tightness"></textarea>
@@ -149,7 +211,6 @@
             <div class="row" style="margin-top:10px;">
               <button class="primary" id="btnAdd">Add to Log</button>
               <button id="btnQuickLast">Use last entry</button>
-              <span class="right small muted" id="lastComparison"></span>
             </div>
 
             <div class="toast" id="toast"></div>
@@ -183,7 +244,7 @@
               <div class="box">
                 <div class="small muted">Fat</div>
                 <div class="big">70–85 g</div>
-                <div class="small muted">Joints + satiety + health.</div>
+                <div class="small muted">Joints + health + satiety.</div>
               </div>
             </div>
 
@@ -247,39 +308,6 @@
               Goal trend: ~0.5–1.0 lb/week. If flat 3 weeks → add 1 extra shake on training days.
             </div>
           </div>
-
-          <div class="card" style="margin-top:12px;">
-            <strong>Reminders (local)</strong>
-            <div class="small muted" style="margin-top:6px;">
-              These are <b>local notifications</b> (they work best while the page is open). True push requires a push provider/server.
-            </div>
-
-            <div class="row" style="margin-top:10px;">
-              <button id="btnEnableNotif">Enable Notifications</button>
-              <button id="btnTestNotif">Test Notification</button>
-            </div>
-
-            <div class="row" style="margin-top:10px;">
-              <div style="flex: 1 1 160px;">
-                <label for="reminderHours">Reminder interval (hours)</label>
-                <input id="reminderHours" inputmode="decimal" placeholder="e.g., 4" />
-              </div>
-              <div style="flex: 1 1 260px;">
-                <label for="reminderText">Reminder text</label>
-                <input id="reminderText" placeholder="Shake #1 + water" />
-              </div>
-              <div style="flex: 1 1 120px;">
-                <label>&nbsp;</label>
-                <button class="primary" id="btnStartReminder">Start</button>
-              </div>
-              <div style="flex: 1 1 120px;">
-                <label>&nbsp;</label>
-                <button class="danger" id="btnStopReminder">Stop</button>
-              </div>
-            </div>
-
-            <div class="small muted" id="reminderStatus" style="margin-top:8px;">Not running.</div>
-          </div>
         </div>
 
         <!-- TAB: GROWTH -->
@@ -287,76 +315,19 @@
           <div class="card">
             <strong>Natural TRT Growth Timeline (12 months)</strong>
             <div class="small muted" style="margin-top:6px;">
-              You’re ~2 months in. This is the “do the basics perfectly” timeline.
+              You’re ~2 months in. Do the basics perfectly and let it compound.
             </div>
 
             <div class="hr"></div>
-
-            <div>
-              <strong>Months 0–2 (now)</strong>
-              <div class="small muted">
-                Stabilizing. Focus: consistent rotation + 1–2 shakes/day + weekly weigh-in.
-                Expect strength to lead size.
-              </div>
-            </div>
-
+            <div><strong>Months 0–2 (now)</strong><div class="small muted">Stabilizing. Strength leads size. Lock rotation + shakes + weigh-ins.</div></div>
             <div class="hr"></div>
-
-            <div>
-              <strong>Months 3–4</strong>
-              <div class="small muted">
-                Visible fullness begins (upper chest/delts/arms). Weight: +2–4 lb.
-                PRs: bar speed + rep quality > load jumps.
-              </div>
-            </div>
-
+            <div><strong>Months 3–4</strong><div class="small muted">Fullness begins. Weight: +2–4 lb. PRs = bar speed + rep quality.</div></div>
             <div class="hr"></div>
-
-            <div>
-              <strong>Months 5–6</strong>
-              <div class="small muted">
-                First “it’s working” phase. Weight: +5–8 lb total.
-                Shirts fit different. Recovery gets more predictable.
-              </div>
-            </div>
-
+            <div><strong>Months 5–6</strong><div class="small muted">First “it’s working” phase. Weight: +5–8 lb total. Shirts fit different.</div></div>
             <div class="hr"></div>
-
-            <div>
-              <strong>Months 7–9</strong>
-              <div class="small muted">
-                Density phase. You look trained at rest. Tendons catch up.
-                Keep frequency low; keep form strict; keep calories steady.
-              </div>
-            </div>
-
+            <div><strong>Months 7–9</strong><div class="small muted">Density phase. Tendons catch up. Don’t increase frequency.</div></div>
             <div class="hr"></div>
-
-            <div>
-              <strong>Months 10–12 (decision point)</strong>
-              <div class="small muted">
-                If progress slows despite compliance, consider medical discussion around recovery support.
-                Do not add anything to “fix” under-eating or under-sleeping.
-              </div>
-            </div>
-
-            <div class="hr"></div>
-
-            <strong>Success checklist</strong>
-            <ul class="small muted" style="margin:8px 0 0; padding-left:18px;">
-              <li>Bodyweight trending up 0.5–1.0 lb/week</li>
-              <li>Same-day soreness resolves before next session</li>
-              <li>No next-morning spine tightness after training</li>
-              <li>Shakes used to “win” low appetite days</li>
-            </ul>
-          </div>
-
-          <div class="card" style="margin-top:12px;">
-            <strong>Your plan logic (simple)</strong>
-            <div class="small muted" style="margin-top:6px;">
-              Heavy Duty works by: massive stimulus → full recovery → adaptation.
-              Progress = beat your last entry for the same exercise/day.
-            </div>
+            <div><strong>Months 10–12</strong><div class="small muted">Decision point: only consider “extras” if compliance is perfect and recovery is limiting.</div></div>
           </div>
         </div>
 
@@ -378,10 +349,9 @@
             Data is stored locally in your browser (localStorage). Export CSV for backup.
           </div>
         </div>
-
       </div>
 
-      <!-- Right: Log -->
+      <!-- RIGHT: LOG -->
       <div class="card">
         <div class="row">
           <strong>Lift Log</strong>
@@ -401,7 +371,7 @@
                 <th style="width:110px;">Date</th>
                 <th style="width:60px;">Day</th>
                 <th>Exercise</th>
-                <th style="width:140px;">Result</th>
+                <th style="width:160px;">Result</th>
                 <th>Notes</th>
               </tr>
             </thead>
@@ -410,7 +380,7 @@
         </div>
 
         <div class="small muted" style="margin-top:10px;">
-          Tip: PR = more reps at same weight, or more weight at same reps. “Cleaner reps” counts too.
+          Tip: Mark “Clean + controlled” when you truly earned it — that’s what triggers progression suggestions.
         </div>
       </div>
     </div>
@@ -418,41 +388,49 @@
 
 <script>
 (() => {
-  // ---------- Plan ----------
+  // ---------------- Plan ----------------
   const PLAN = {
-    A: {
-      title: "Day A — Chest & Back",
-      exercises: [
-        "Cable Flye (pre-exhaust)",
-        "Incline Barbell Press (close grip)",
-        "Dumbbell Pullover",
-        "Weighted Pull-Ups (palms up)",
-        "Seated Cable Row (or Landmine Row)"
-      ]
-    },
-    B: {
-      title: "Day B — Legs",
-      exercises: [
-        "Squat (maintenance / spine-aware)",
-        "Dip-Belt Calf Raise"
-      ]
-    },
-    C: {
-      title: "Day C — Delts & Arms",
-      exercises: [
-        "Cable Lateral Raise",
-        "Barbell Curl (via cable) + Rest-Pause",
-        "Triceps Pressdown",
-        "Dips (bodyweight)"
-      ]
-    }
+    A: { title: "Day A — Chest & Back", exercises: [
+      "Cable Flye (pre-exhaust)",
+      "Incline Barbell Press (close grip)",
+      "Dumbbell Pullover",
+      "Weighted Pull-Ups (palms up)",
+      "Seated Cable Row (or Landmine Row)"
+    ]},
+    B: { title: "Day B — Legs", exercises: [
+      "Squat (maintenance / spine-aware)",
+      "Dip-Belt Calf Raise"
+    ]},
+    C: { title: "Day C — Delts & Arms", exercises: [
+      "Cable Lateral Raise",
+      "Barbell Curl (via cable) + Rest-Pause",
+      "Triceps Pressdown",
+      "Dips (bodyweight)"
+    ]}
   };
 
-  // ---------- Storage keys ----------
-  const KEY_LOG = "HD_LOG_V2";
+  // ------------- Rep ranges + progression (edit here) -------------
+  // If reps >= repMax AND "Clean" checked => suggest +inc (lb) next time.
+  // Units: lb (default), bw, bw+
+  const RULES = {
+    "Cable Flye (pre-exhaust)": { repMin: 8, repMax: 12, inc: 2.5, units: "lb" },
+    "Incline Barbell Press (close grip)": { repMin: 1, repMax: 3, inc: 5, units: "lb" },
+    "Dumbbell Pullover": { repMin: 6, repMax: 8, inc: 5, units: "lb" },
+    "Weighted Pull-Ups (palms up)": { repMin: 1, repMax: 4, inc: 2.5, units: "bw+" },
+    "Seated Cable Row (or Landmine Row)": { repMin: 6, repMax: 10, inc: 5, units: "lb" },
+    "Squat (maintenance / spine-aware)": { repMin: 5, repMax: 6, inc: 5, units: "lb" },
+    "Dip-Belt Calf Raise": { repMin: 10, repMax: 15, inc: 5, units: "lb" },
+    "Cable Lateral Raise": { repMin: 10, repMax: 15, inc: 2.5, units: "lb" },
+    "Barbell Curl (via cable) + Rest-Pause": { repMin: 1, repMax: 3, inc: 2.5, units: "lb" },
+    "Triceps Pressdown": { repMin: 6, repMax: 10, inc: 5, units: "lb" },
+    "Dips (bodyweight)": { repMin: 6, repMax: 8, inc: 0, units: "bw" },
+  };
+
+  // ---------------- Storage ----------------
+  const KEY_LOG = "HD_LOG_V3";
   const KEY_DAILY = "HD_DAILY_V1";
   const KEY_WEIGH = "HD_WEIGH_V1";
-  const KEY_REM = "HD_REMINDER_V1";
+  const KEY_TARGETS = "HD_TARGETS_V1"; // suggested next targets per exercise/day
 
   const loadJSON = (k, fallback) => {
     try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(fallback)); }
@@ -460,7 +438,7 @@
   };
   const saveJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
-  // ---------- Helpers ----------
+  // ---------------- Helpers ----------------
   const $ = (id) => document.getElementById(id);
   const todayISO = () => {
     const d = new Date();
@@ -479,19 +457,26 @@
       "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
     }[m]));
 
-  function toast(msg) {
-    $("toast").textContent = msg;
-    setTimeout(()=> { if ($("toast").textContent === msg) $("toast").textContent = ""; }, 2500);
-  }
-
   function bestGuessNextDay(log) {
     if (!log.length) return "A";
     const lastEntry = [...log].sort((a,b)=> (b.ts||0)-(a.ts||0))[0];
     return nextDay(lastEntry.day);
   }
 
+  function formatResult(e) {
+    if (!e) return "—";
+    if (e.units === "bw") return `bw × ${e.reps}`;
+    if (e.units === "bw+") return `bw+${e.weight} × ${e.reps}`;
+    return `${e.weight}${e.units} × ${e.reps}`;
+  }
+
+  function toast(msg) {
+    $("toast").textContent = msg;
+    setTimeout(()=> { if ($("toast").textContent === msg) $("toast").textContent = ""; }, 2500);
+  }
+
   function updatePlanUI(day) {
-    $("planTitle").textContent = PLAN[day].title;
+    $("planTitle").textContent = `Plan — ${PLAN[day].title}`;
     $("planList").innerHTML = PLAN[day].exercises.map(x => `<li>${escapeHtml(x)}</li>`).join("");
     $("exerciseSelect").innerHTML = PLAN[day].exercises.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
   }
@@ -505,37 +490,24 @@
     });
 
     $("logCount").textContent = `${filtered.length} entries`;
-
-    const rows = filtered.map(e => {
-      const result = (() => {
-        if (e.units === "bw") return `bw × ${e.reps}`;
-        if (e.units === "bw+") return `bw+${e.weight} × ${e.reps}`;
-        return `${e.weight}${e.units} × ${e.reps}`;
-      })();
-      return `
-        <tr>
-          <td class="mono">${escapeHtml(e.date)}</td>
-          <td><span class="pill">${escapeHtml(e.day)}</span></td>
-          <td>${escapeHtml(e.exercise)}</td>
-          <td class="mono">${escapeHtml(result)}</td>
-          <td class="muted">${escapeHtml(e.notes || "")}</td>
-        </tr>
-      `;
-    }).join("");
-
-    $("logBody").innerHTML = rows || `
-      <tr><td colspan="5" class="muted">No entries yet. Add your first set.</td></tr>
-    `;
+    $("logBody").innerHTML = filtered.length ? filtered.map(e => `
+      <tr>
+        <td class="mono">${escapeHtml(e.date)}</td>
+        <td><span class="pill">${escapeHtml(e.day)}</span></td>
+        <td>${escapeHtml(e.exercise)}</td>
+        <td class="mono">${escapeHtml(formatResult(e))}${e.clean ? " ✅" : ""}</td>
+        <td class="muted">${escapeHtml(e.notes || "")}</td>
+      </tr>
+    `).join("") : `<tr><td colspan="5" class="muted">No entries yet. Add your first set.</td></tr>`;
   }
 
   function findLastForExercise(log, day, exercise) {
-    const sorted = [...log].sort((a,b)=> (b.ts||0)-(a.ts||0));
-    return sorted.find(e => e.day === day && e.exercise === exercise) || null;
+    return [...log].sort((a,b)=> (b.ts||0)-(a.ts||0)).find(e => e.day === day && e.exercise === exercise) || null;
   }
 
   function compareToLast(current, last) {
     if (!last) return "No previous entry";
-    if (current.units !== last.units) return `Last: ${last.weight}${last.units} × ${last.reps}`;
+    if (current.units !== last.units) return `Last: ${formatResult(last)}`;
 
     const cw = current.units === "bw" ? 0 : Number(current.weight || 0);
     const lw = last.units === "bw" ? 0 : Number(last.weight || 0);
@@ -548,14 +520,194 @@
     else if (cw > lw && cr > lr) verdict = "PR: weight + reps";
     else if (cw < lw && cr < lr) verdict = "Below last (fine on comeback)";
 
-    return verdict + ` (Last: ${last.weight}${last.units} × ${last.reps})`;
+    return `${verdict} (Last: ${formatResult(last)})`;
+  }
+
+  // ---------------- Targets (auto-progress) ----------------
+  // Store suggested next targets by key = `${day}||${exercise}`
+  function keyOf(day, ex) { return `${day}||${ex}`; }
+
+  function getRule(ex) { return RULES[ex] || null; }
+
+  function computeSuggestedNext(ex, units, weightStr, repsNum, clean) {
+    const r = getRule(ex);
+    if (!r) return null;
+
+    const repMax = r.repMax;
+    const inc = r.inc;
+
+    if (!clean) return null;
+    if (repsNum < repMax) return null;
+    if (inc <= 0) return null;
+
+    // For bw: no weight progression suggested
+    if (units === "bw") return null;
+
+    const w = units === "bw+" ? Number(weightStr || 0) : Number(weightStr || 0);
+    if (!Number.isFinite(w)) return null;
+
+    const nextW = Math.round((w + inc) * 2) / 2; // keep .5 steps possible
+    return { units, weight: String(nextW), repsTarget: r.repMin }; // keep target as low end of range
+  }
+
+  function setBadges(day, ex, last, targets) {
+    const r = getRule(ex);
+    const repRange = r ? `${r.repMin}–${r.repMax} reps` : "—";
+    $("lastBadge").textContent = `Last: ${last ? formatResult(last) : "—"}`;
+    $("targetBadge").textContent = `Target: ${repRange}`;
+    const t = targets[keyOf(day, ex)] || null;
+    $("nextBadge").textContent = `Next (if clean max): ${t ? (t.units==="bw+"?`bw+${t.weight}`:`${t.weight}${t.units}`) : "—"}`;
+  }
+
+  function applyAutoFill(day, ex) {
+    const last = findLastForExercise(log, day, ex);
+    const r = getRule(ex);
+
+    // Auto fill with target if exists, else last, else defaults
+    const t = targets[keyOf(day, ex)] || null;
+
+    if (t) {
+      $("unitsSelect").value = t.units;
+      $("weightInput").value = t.weight || "";
+      $("repsInput").value = "";
+    } else if (last) {
+      $("unitsSelect").value = last.units;
+      $("weightInput").value = last.weight || "";
+      $("repsInput").value = "";
+    } else if (r) {
+      $("unitsSelect").value = r.units || "lb";
+      $("weightInput").value = "";
+      $("repsInput").value = "";
+    }
+
+    setBadges(day, ex, last, targets);
+    $("chkClean").checked = false;
+    $("lastComparison").textContent = last ? `Last: ${formatResult(last)}` : "";
+  }
+
+  // ---------------- Cadence Coach ----------------
+  let cadTimer = null;
+  let cadState = { rep: 0, phase: "idle", secsLeft: 0, down: 4, up: 2, reps: 8 };
+
+  function speak(text) {
+    // speech synthesis (best "someone watching you" without camera)
+    try {
+      if (!("speechSynthesis" in window)) return;
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.0;
+      u.pitch = 1.0;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch {}
+  }
+
+  function cadSetStatus() {
+    $("cadStatus").textContent = cadState.phase === "idle"
+      ? "Idle"
+      : `Rep ${cadState.rep}/${cadState.reps} — ${cadState.phase} (${cadState.secsLeft}s)`;
+  }
+
+  function cadStop() {
+    if (cadTimer) clearInterval(cadTimer);
+    cadTimer = null;
+    cadState.phase = "idle";
+    cadState.rep = 0;
+    cadState.secsLeft = 0;
+    cadSetStatus();
+    try { window.speechSynthesis?.cancel?.(); } catch {}
+  }
+
+  function cadStart(down, up, reps) {
+    cadStop();
+    cadState = { rep: 0, phase: "down", secsLeft: down, down, up, reps };
+    cadSetStatus();
+    speak("Start set. Rep 1. Down.");
+
+    cadTimer = setInterval(() => {
+      cadState.secsLeft -= 1;
+
+      // cue countdown lightly
+      if (cadState.secsLeft > 0) {
+        if (cadState.secsLeft <= 3) speak(String(cadState.secsLeft));
+        cadSetStatus();
+        return;
+      }
+
+      // phase switch
+      if (cadState.phase === "down") {
+        cadState.phase = "up";
+        cadState.secsLeft = cadState.up;
+        speak("Up.");
+        cadSetStatus();
+        return;
+      }
+
+      if (cadState.phase === "up") {
+        cadState.rep += 1;
+        if (cadState.rep >= cadState.reps) {
+          speak("Set complete.");
+          cadStop();
+          return;
+        }
+        cadState.phase = "down";
+        cadState.secsLeft = cadState.down;
+        speak(`Rep ${cadState.rep + 1}. Down.`);
+        cadSetStatus();
+        return;
+      }
+    }, 1000);
+  }
+
+  // ---------------- Nutrition (existing simple) ----------------
+  let daily = loadJSON(KEY_DAILY, {});
+  let weigh = loadJSON(KEY_WEIGH, []);
+
+  function dayKey() { return todayISO(); }
+  function loadDailyUI() {
+    const k = dayKey();
+    const d = daily[k] || {};
+    $("chkMeal1").checked = !!d.meal1;
+    $("chkMeal2").checked = !!d.meal2;
+    $("chkShake1").checked = !!d.shake1;
+    $("chkShake2").checked = !!d.shake2;
+    $("chkCreatine").checked = !!d.creatine;
+    $("chkWater").checked = !!d.water;
+    $("dailySavedText").textContent = d.savedAt ? `Saved: ${new Date(d.savedAt).toLocaleTimeString()}` : "";
+  }
+
+  function refreshNutritionPill() {
+    const k = dayKey();
+    const d = daily[k] || {};
+    const shakes = (d.shake1 ? 1 : 0) + (d.shake2 ? 1 : 0);
+    $("nutritionPill").textContent = `Nutrition: ${shakes}/2 shakes`;
+  }
+
+  function renderWeigh() {
+    const sorted = [...weigh].sort((a,b)=> (b.ts||0)-(a.ts||0));
+    $("weighBody").innerHTML = sorted.length ? sorted.map(e => `
+      <tr>
+        <td class="mono">${escapeHtml(e.date)}</td>
+        <td class="mono">${escapeHtml(e.weight)}</td>
+        <td class="muted">${escapeHtml(e.note || "")}</td>
+        <td><button class="danger" data-del="${e.ts}">Delete</button></td>
+      </tr>
+    `).join("") : `<tr><td colspan="4" class="muted">No weigh-ins yet.</td></tr>`;
+
+    document.querySelectorAll("[data-del]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const ts = Number(btn.getAttribute("data-del"));
+        weigh = weigh.filter(w => w.ts !== ts);
+        saveJSON(KEY_WEIGH, weigh);
+        renderWeigh();
+      });
+    });
   }
 
   function exportCSV(log) {
-    const header = ["date","day","exercise","weight","units","reps","notes"].join(",");
+    const header = ["date","day","exercise","weight","units","reps","clean","notes"].join(",");
     const lines = [...log].sort((a,b)=> (a.ts||0)-(b.ts||0)).map(e => {
       const safe = (v) => `"${String(v ?? "").replace(/"/g,'""')}"`;
-      return [e.date, e.day, e.exercise, e.weight, e.units, e.reps, e.notes].map(safe).join(",");
+      return [e.date, e.day, e.exercise, e.weight, e.units, e.reps, e.clean ? "1" : "0", e.notes].map(safe).join(",");
     });
     return [header, ...lines].join("\n");
   }
@@ -569,14 +721,22 @@
     return [header, ...lines].join("\n");
   }
 
-  // ---------- State ----------
-  let log = loadJSON(KEY_LOG, []);
-  let weigh = loadJSON(KEY_WEIGH, []);
-  let daily = loadJSON(KEY_DAILY, {}); // keyed by ISO date
-  let reminder = loadJSON(KEY_REM, { running:false, intervalMs:0, text:"" });
-  let reminderTimer = null;
+  function downloadText(text, filename, mime) {
+    const blob = new Blob([text], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
 
-  // ---------- Init ----------
+  // ---------------- Init ----------------
+  let log = loadJSON(KEY_LOG, []);
+  let targets = loadJSON(KEY_TARGETS, {}); // next target weights
+
   $("dateInput").value = todayISO();
   $("weighDate").value = todayISO();
 
@@ -586,18 +746,20 @@
   updatePlanUI(defaultDay);
 
   $("nextDayPill").textContent = `Next: Day ${defaultDay}`;
-
   renderLog(log);
   renderWeigh();
   loadDailyUI();
   refreshNutritionPill();
 
-  // ---------- Tabs ----------
+  // badges + auto fill initial exercise
+  const ex0 = $("exerciseSelect").value;
+  applyAutoFill($("daySelect").value, ex0);
+
+  // ---------------- Tabs ----------------
   document.querySelectorAll(".tabbtn").forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".tabbtn").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
-
       const tab = btn.getAttribute("data-tab");
       ["plan","entry","nutrition","growth"].forEach(t => {
         $("tab_"+t).classList.toggle("hidden", t !== tab);
@@ -605,24 +767,68 @@
     });
   });
 
-  // ---------- Plan preview ----------
+  // Plan preview day
   $("daySelectPlan").addEventListener("change", () => {
-    updatePlanUI($("daySelectPlan").value);
+    const day = $("daySelectPlan").value;
+    $("planTitle").textContent = `Plan — ${PLAN[day].title}`;
+    $("planList").innerHTML = PLAN[day].exercises.map(x => `<li>${escapeHtml(x)}</li>`).join("");
   });
 
-  // ---------- Entry day change ----------
+  // Entry day change
   $("daySelect").addEventListener("change", () => {
     updatePlanUI($("daySelect").value);
-    $("lastComparison").textContent = "";
+    applyAutoFill($("daySelect").value, $("exerciseSelect").value);
   });
 
+  // Exercise change => AUTO FILL last/target instantly
+  $("exerciseSelect").addEventListener("change", () => {
+    applyAutoFill($("daySelect").value, $("exerciseSelect").value);
+  });
+
+  // Manual load last
+  $("btnUseLast").addEventListener("click", () => {
+    const day = $("daySelect").value;
+    const ex = $("exerciseSelect").value;
+    const last = findLastForExercise(log, day, ex);
+    if (!last) return toast("No last entry found.");
+    $("unitsSelect").value = last.units;
+    $("weightInput").value = last.weight || "";
+    $("repsInput").value = "";
+    toast("Loaded last weight.");
+  });
+
+  // Apply suggested target
+  $("btnApplySuggested").addEventListener("click", () => {
+    const day = $("daySelect").value;
+    const ex = $("exerciseSelect").value;
+    const t = targets[keyOf(day, ex)];
+    if (!t) return toast("No suggested target yet.");
+    $("unitsSelect").value = t.units;
+    $("weightInput").value = t.weight || "";
+    $("repsInput").value = "";
+    toast("Applied suggested target.");
+  });
+
+  // Cadence coach buttons
+  $("btnCadStart").addEventListener("click", () => {
+    const down = parseNum($("cadDown").value);
+    const up = parseNum($("cadUp").value);
+    const reps = parseNum($("cadReps").value);
+    if (!down || !up || !reps || down <= 0 || up <= 0 || reps <= 0) return toast("Enter valid cadence numbers.");
+    cadStart(down, up, reps);
+  });
+  $("btnCadStop").addEventListener("click", () => cadStop());
+
+  // Search
   $("searchInput").addEventListener("input", () => renderLog(log));
 
+  // Today
   $("btnToday").addEventListener("click", () => {
     $("dateInput").value = todayISO();
     toast("Date set to today.");
   });
 
+  // Add log entry (with auto-progression)
   $("btnAdd").addEventListener("click", () => {
     const day = $("daySelect").value;
     const date = $("dateInput").value || todayISO();
@@ -649,120 +855,97 @@
       weight,
       units,
       reps: String(reps),
+      clean: $("chkClean").checked,
       notes: $("notesInput").value.trim()
     };
 
     const last = findLastForExercise(log, day, exercise);
     $("lastComparison").textContent = compareToLast(entry, last);
 
+    // Save entry
     log.push(entry);
     saveJSON(KEY_LOG, log);
     renderLog(log);
 
+    // Auto-progression suggestion: if clean + hit repMax => set "next target" for that exercise/day
+    const suggested = computeSuggestedNext(exercise, units, weight, reps, entry.clean);
+    if (suggested) {
+      targets[keyOf(day, exercise)] = suggested;
+      saveJSON(KEY_TARGETS, targets);
+      toast(`Saved next target: ${suggested.units==="bw+" ? "bw+"+suggested.weight : suggested.weight+suggested.units}`);
+    } else {
+      toast("Saved.");
+    }
+
+    // update badges + next day pill
     const nd = bestGuessNextDay(log);
     $("nextDayPill").textContent = `Next: Day ${nd}`;
 
+    // Clear only reps + notes + clean (keep weight for convenience)
     $("repsInput").value = "";
     $("notesInput").value = "";
-    toast("Saved.");
+    $("chkClean").checked = false;
+
+    // refresh badges for current exercise
+    applyAutoFill(day, exercise);
   });
 
+  // Quick last entry button (fills last entire entry)
   $("btnQuickLast").addEventListener("click", () => {
     const day = $("daySelect").value;
-    const exercise = $("exerciseSelect").value;
-    const last = findLastForExercise(log, day, exercise);
+    const ex = $("exerciseSelect").value;
+    const last = findLastForExercise(log, day, ex);
     if (!last) return toast("No previous entry for this exercise/day.");
     $("unitsSelect").value = last.units;
     $("weightInput").value = last.weight || "";
     $("repsInput").value = last.reps || "";
     $("notesInput").value = last.notes || "";
+    $("chkClean").checked = !!last.clean;
     toast("Loaded last entry.");
   });
 
+  // Delete last entry
   $("btnDeleteLast").addEventListener("click", () => {
     if (!log.length) return toast("Log is empty.");
     const sortedIdx = log
       .map((e,i)=>({e,i}))
       .sort((a,b)=>(b.e.ts||0)-(a.e.ts||0))[0].i;
-
     const removed = log.splice(sortedIdx,1)[0];
     saveJSON(KEY_LOG, log);
     renderLog(log);
-
     const nd = bestGuessNextDay(log);
     $("nextDayPill").textContent = `Next: Day ${nd}`;
-    toast(`Deleted last: Day ${removed.day} — ${removed.exercise}`);
+    toast(`Deleted: Day ${removed.day} — ${removed.exercise}`);
   });
 
-  // ---------- Settings ----------
+  // Settings
   $("btnSettings").addEventListener("click", () => $("settingsPanel").classList.toggle("hidden"));
   $("btnCloseSettings").addEventListener("click", () => $("settingsPanel").classList.add("hidden"));
-
   $("btnExport").addEventListener("click", () => {
-    const csv = exportCSV(log);
-    downloadText(csv, "heavy-duty-lift-log.csv", "text/csv;charset=utf-8");
+    downloadText(exportCSV(log), "heavy-duty-lift-log.csv", "text/csv;charset=utf-8");
+    toast("Exported lift log CSV.");
   });
-
   $("btnExportWeigh").addEventListener("click", () => {
-    const csv = exportWeighCSV(weigh);
-    downloadText(csv, "heavy-duty-weighins.csv", "text/csv;charset=utf-8");
+    downloadText(exportWeighCSV(weigh), "heavy-duty-weighins.csv", "text/csv;charset=utf-8");
+    toast("Exported weigh-ins CSV.");
   });
-
   $("btnClear").addEventListener("click", () => {
-    const ok = confirm("Clear the entire LIFT log? This cannot be undone.");
-    if (!ok) return;
+    if (!confirm("Clear the entire LIFT log? This cannot be undone.")) return;
     log = [];
     saveJSON(KEY_LOG, log);
     renderLog(log);
-    const nd = bestGuessNextDay(log);
-    $("nextDayPill").textContent = `Next: Day ${nd}`;
+    $("nextDayPill").textContent = `Next: Day A`;
     toast("Lift log cleared.");
   });
-
   $("btnClearWeigh").addEventListener("click", () => {
-    const ok = confirm("Clear the entire WEIGH-IN log? This cannot be undone.");
-    if (!ok) return;
+    if (!confirm("Clear the entire WEIGH-IN log? This cannot be undone.")) return;
     weigh = [];
     saveJSON(KEY_WEIGH, weigh);
     renderWeigh();
     toast("Weigh-ins cleared.");
   });
 
-  function downloadText(text, filename, mime) {
-    const blob = new Blob([text], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    toast("Exported.");
-  }
-
-  // ---------- Nutrition daily ----------
-  function dayKey() { return todayISO(); }
-
-  function loadDailyUI() {
-    const k = dayKey();
-    const d = daily[k] || {};
-    $("chkMeal1").checked = !!d.meal1;
-    $("chkMeal2").checked = !!d.meal2;
-    $("chkShake1").checked = !!d.shake1;
-    $("chkShake2").checked = !!d.shake2;
-    $("chkCreatine").checked = !!d.creatine;
-    $("chkWater").checked = !!d.water;
-    $("dailySavedText").textContent = d.savedAt ? `Saved: ${new Date(d.savedAt).toLocaleTimeString()}` : "";
-  }
-
-  function refreshNutritionPill() {
-    const k = dayKey();
-    const d = daily[k] || {};
-    const shakes = (d.shake1 ? 1 : 0) + (d.shake2 ? 1 : 0);
-    $("nutritionPill").textContent = `Nutrition: ${shakes}/2 shakes`;
-  }
-
+  // Nutrition save/reset
   $("btnSaveDaily").addEventListener("click", () => {
     const k = dayKey();
     daily[k] = {
@@ -781,119 +964,29 @@
   });
 
   $("btnResetDaily").addEventListener("click", () => {
-    const ok = confirm("Reset today's checklist?");
-    if (!ok) return;
-    const k = dayKey();
-    delete daily[k];
+    if (!confirm("Reset today's checklist?")) return;
+    delete daily[dayKey()];
     saveJSON(KEY_DAILY, daily);
     loadDailyUI();
     refreshNutritionPill();
     toast("Reset.");
   });
 
-  // ---------- Weigh-ins ----------
-  function renderWeigh() {
-    const sorted = [...weigh].sort((a,b)=> (b.ts||0)-(a.ts||0));
-    $("weighBody").innerHTML = sorted.length ? sorted.map((e, idx) => `
-      <tr>
-        <td class="mono">${escapeHtml(e.date)}</td>
-        <td class="mono">${escapeHtml(e.weight)}</td>
-        <td class="muted">${escapeHtml(e.note || "")}</td>
-        <td><button class="danger" data-del="${e.ts}">Delete</button></td>
-      </tr>
-    `).join("") : `<tr><td colspan="4" class="muted">No weigh-ins yet.</td></tr>`;
-
-    document.querySelectorAll("[data-del]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const ts = Number(btn.getAttribute("data-del"));
-        weigh = weigh.filter(w => w.ts !== ts);
-        saveJSON(KEY_WEIGH, weigh);
-        renderWeigh();
-        toast("Deleted weigh-in.");
-      });
-    });
-  }
-
+  // Weigh-ins
   $("btnAddWeigh").addEventListener("click", () => {
     const date = $("weighDate").value || todayISO();
     const w = parseNum($("weighValue").value);
     if (w === null || w <= 0) return toast("Enter bodyweight (number).");
     const note = $("weighNote").value.trim();
-
     weigh.push({ ts: Date.now(), date, weight: String(w), note });
     saveJSON(KEY_WEIGH, weigh);
     renderWeigh();
-
     $("weighValue").value = "";
     $("weighNote").value = "";
     toast("Weigh-in added.");
   });
 
-  // ---------- Local notifications (not push) ----------
-  $("btnEnableNotif").addEventListener("click", async () => {
-    if (!("Notification" in window)) return toast("Notifications not supported on this browser.");
-    const perm = await Notification.requestPermission();
-    toast(perm === "granted" ? "Notifications enabled." : "Notifications denied.");
-  });
-
-  $("btnTestNotif").addEventListener("click", () => {
-    sendLocalNotif("Heavy Duty", "Test notification. You're locked in.");
-  });
-
-  function sendLocalNotif(title, body) {
-    if (!("Notification" in window)) return toast("Notifications not supported.");
-    if (Notification.permission !== "granted") return toast("Enable notifications first.");
-    try {
-      new Notification(title, { body });
-      toast("Notification sent.");
-    } catch {
-      toast("Notification blocked by browser settings.");
-    }
-  }
-
-  function stopReminder() {
-    if (reminderTimer) clearInterval(reminderTimer);
-    reminderTimer = null;
-    reminder.running = false;
-    saveJSON(KEY_REM, reminder);
-    $("reminderStatus").textContent = "Not running.";
-  }
-
-  function startReminder(intervalMs, text) {
-    stopReminder();
-    reminder.running = true;
-    reminder.intervalMs = intervalMs;
-    reminder.text = text;
-    saveJSON(KEY_REM, reminder);
-
-    reminderTimer = setInterval(() => {
-      sendLocalNotif("Heavy Duty Reminder", text || "Shake + water.");
-    }, intervalMs);
-
-    $("reminderStatus").textContent = `Running every ${Math.round(intervalMs/360000)/10} hours: ${text || "Shake + water."}`;
-  }
-
-  $("btnStartReminder").addEventListener("click", () => {
-    const hrs = parseNum($("reminderHours").value);
-    if (hrs === null || hrs <= 0) return toast("Enter reminder interval in hours.");
-    const text = $("reminderText").value.trim() || "Shake #1 + water";
-    startReminder(hrs * 60 * 60 * 1000, text);
-    toast("Reminder started (works best while page is open).");
-  });
-
-  $("btnStopReminder").addEventListener("click", () => {
-    stopReminder();
-    toast("Reminder stopped.");
-  });
-
-  // Restore reminder if previously running (best effort)
-  if (reminder.running && reminder.intervalMs > 0) {
-    startReminder(reminder.intervalMs, reminder.text);
-  } else {
-    $("reminderStatus").textContent = "Not running.";
-  }
-
-  // Keep nutrition pill current if date changes at midnight while open
+  // Keep nutrition pill current if day flips while open
   setInterval(() => {
     loadDailyUI();
     refreshNutritionPill();
