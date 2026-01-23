@@ -397,8 +397,11 @@
       "Weighted Pull-Ups (palms up)",
       "Seated Cable Row (or Landmine Row)"
     ]},
-    B: { title: "Day B — Legs", exercises: [
-      "Squat (maintenance / spine-aware)",
+    // UPDATED: Spine-safe muscle legs (no squats, no hip thrusts)
+    B: { title: "Day B — Legs (Spine-Safe Muscle)", exercises: [
+      "Spanish Squat (Cable) — Heavy",
+      "Cable Squat-to-Box (Assisted)",
+      "Standing Cable Hamstring Curl",
       "Dip-Belt Calf Raise"
     ]},
     C: { title: "Day C — Delts & Arms", exercises: [
@@ -418,8 +421,13 @@
     "Dumbbell Pullover": { repMin: 6, repMax: 8, inc: 5, units: "lb" },
     "Weighted Pull-Ups (palms up)": { repMin: 1, repMax: 4, inc: 2.5, units: "bw+" },
     "Seated Cable Row (or Landmine Row)": { repMin: 6, repMax: 10, inc: 5, units: "lb" },
-    "Squat (maintenance / spine-aware)": { repMin: 5, repMax: 6, inc: 5, units: "lb" },
+
+    // UPDATED LEGS
+    "Spanish Squat (Cable) — Heavy": { repMin: 10, repMax: 20, inc: 10, units: "lb" },
+    "Cable Squat-to-Box (Assisted)": { repMin: 8, repMax: 12, inc: 5, units: "lb" },
+    "Standing Cable Hamstring Curl": { repMin: 8, repMax: 12, inc: 5, units: "lb" },
     "Dip-Belt Calf Raise": { repMin: 10, repMax: 15, inc: 5, units: "lb" },
+
     "Cable Lateral Raise": { repMin: 10, repMax: 15, inc: 2.5, units: "lb" },
     "Barbell Curl (via cable) + Rest-Pause": { repMin: 1, repMax: 3, inc: 2.5, units: "lb" },
     "Triceps Pressdown": { repMin: 6, repMax: 10, inc: 5, units: "lb" },
@@ -590,7 +598,6 @@
   let cadState = { rep: 0, phase: "idle", secsLeft: 0, down: 4, up: 2, reps: 8 };
 
   function speak(text) {
-    // speech synthesis (best "someone watching you" without camera)
     try {
       if (!("speechSynthesis" in window)) return;
       const u = new SpeechSynthesisUtterance(text);
@@ -626,14 +633,12 @@
     cadTimer = setInterval(() => {
       cadState.secsLeft -= 1;
 
-      // cue countdown lightly
       if (cadState.secsLeft > 0) {
         if (cadState.secsLeft <= 3) speak(String(cadState.secsLeft));
         cadSetStatus();
         return;
       }
 
-      // phase switch
       if (cadState.phase === "down") {
         cadState.phase = "up";
         cadState.secsLeft = cadState.up;
@@ -751,7 +756,6 @@
   loadDailyUI();
   refreshNutritionPill();
 
-  // badges + auto fill initial exercise
   const ex0 = $("exerciseSelect").value;
   applyAutoFill($("daySelect").value, ex0);
 
@@ -862,12 +866,10 @@
     const last = findLastForExercise(log, day, exercise);
     $("lastComparison").textContent = compareToLast(entry, last);
 
-    // Save entry
     log.push(entry);
     saveJSON(KEY_LOG, log);
     renderLog(log);
 
-    // Auto-progression suggestion: if clean + hit repMax => set "next target" for that exercise/day
     const suggested = computeSuggestedNext(exercise, units, weight, reps, entry.clean);
     if (suggested) {
       targets[keyOf(day, exercise)] = suggested;
@@ -877,16 +879,13 @@
       toast("Saved.");
     }
 
-    // update badges + next day pill
     const nd = bestGuessNextDay(log);
     $("nextDayPill").textContent = `Next: Day ${nd}`;
 
-    // Clear only reps + notes + clean (keep weight for convenience)
     $("repsInput").value = "";
     $("notesInput").value = "";
     $("chkClean").checked = false;
 
-    // refresh badges for current exercise
     applyAutoFill(day, exercise);
   });
 
@@ -986,7 +985,6 @@
     toast("Weigh-in added.");
   });
 
-  // Keep nutrition pill current if day flips while open
   setInterval(() => {
     loadDailyUI();
     refreshNutritionPill();
