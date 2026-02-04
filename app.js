@@ -22,7 +22,7 @@
     ]}
   };
 
-  // ------------- Rep ranges + progression (edit here) -------------
+  // ------------- Rep ranges + progression -------------
   const RULES = {
     "Cable Flye (pre-exhaust)": { repMin: 8, repMax: 12, inc: 2.5, units: "lb" },
     "Incline Barbell Press (close grip)": { repMin: 1, repMax: 3, inc: 5, units: "lb" },
@@ -190,17 +190,14 @@
     $("lastComparison").textContent = last ? `Last: ${formatResult(last)}` : "";
   }
 
-  // ---------------- Cadence Coach (REAL sound + vibration) ----------------
+  // ---------------- Cadence Coach (Voice + Beep + Vibration) ----------------
   let cadTimer = null;
   let cadState = { rep: 0, phase: "idle", secsLeft: 0, down: 4, up: 2, reps: 8 };
   let audioCtx = null;
 
   function ensureAudio() {
-    // Must be created in a user gesture; this is called from the Start button
-    if (!audioCtx) {
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (Ctx) audioCtx = new Ctx();
-    }
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!audioCtx && Ctx) audioCtx = new Ctx();
     if (audioCtx && audioCtx.state === "suspended") audioCtx.resume().catch(()=>{});
   }
 
@@ -212,7 +209,7 @@
       const g = audioCtx.createGain();
       o.type = "sine";
       o.frequency.value = freq;
-      g.gain.value = 0.08; // gentle beep
+      g.gain.value = 0.08;
       o.connect(g);
       g.connect(audioCtx.destination);
       o.start();
@@ -224,10 +221,28 @@
     try { if (navigator.vibrate) navigator.vibrate(pattern); } catch {}
   }
 
-  function cue(text, beepFreq) {
-    // No TTS dependency. Beep + vibrate + status text.
-    if (beepFreq) beep(120, beepFreq);
-    buzz(30);
+  function speak(text) {
+    try {
+      if (!("speechSynthesis" in window)) return;
+      // cancel any queued utterances so cues stay tight
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.05;
+      u.pitch = 1.0;
+      u.volume = 1.0;
+      window.speechSynthesis.speak(u);
+    } catch {}
+  }
+
+  function cue(text, freq) {
+    const useVoice = $("chkCadVoice")?.checked;
+    const useBeep = $("chkCadBeep")?.checked;
+    const useVibe = $("chkCadVibe")?.checked;
+
+    if (useBeep) beep(120, freq || 880);
+    if (useVibe) buzz(30);
+    if (useVoice) speak(text);
+
     $("cadStatus").textContent = text;
   }
 
@@ -244,20 +259,22 @@
     cadState.rep = 0;
     cadState.secsLeft = 0;
     cadSetStatus();
+    try { window.speechSynthesis?.cancel?.(); } catch {}
   }
 
   function cadStart(down, up, reps) {
     cadStop();
     ensureAudio();
+
     cadState = { rep: 0, phase: "down", secsLeft: down, down, up, reps };
     cadSetStatus();
-    cue("Start set — Rep 1 — DOWN", 880);
+    cue("Start. Rep one. Down.", 880);
 
     cadTimer = setInterval(() => {
       cadState.secsLeft -= 1;
 
       if (cadState.secsLeft > 0) {
-        if (cadState.secsLeft <= 3) cue(`${cadState.secsLeft}`, 660);
+        if (cadState.secsLeft <= 3) cue(String(cadState.secsLeft), 660);
         else cadSetStatus();
         return;
       }
@@ -265,20 +282,20 @@
       if (cadState.phase === "down") {
         cadState.phase = "up";
         cadState.secsLeft = cadState.up;
-        cue("UP", 990);
+        cue("Up.", 990);
         return;
       }
 
       if (cadState.phase === "up") {
         cadState.rep += 1;
         if (cadState.rep >= cadState.reps) {
-          cue("Set complete", 520);
+          cue("Set complete.", 520);
           cadStop();
           return;
         }
         cadState.phase = "down";
         cadState.secsLeft = cadState.down;
-        cue(`Rep ${cadState.rep + 1} — DOWN`, 880);
+        cue(`Rep ${cadState.rep + 1}. Down.`, 880);
         return;
       }
     }, 1000);
@@ -597,7 +614,6 @@
     toast("Weigh-in added.");
   });
 
-  // Keep nutrition pill current
   setInterval(() => {
     loadDailyUI();
     refreshNutritionPill();
