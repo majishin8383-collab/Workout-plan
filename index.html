@@ -181,6 +181,23 @@
                 (Turn your media volume up.)
               </div>
 
+              <!-- NEW: cue options -->
+              <div class="row" style="margin-top:10px;">
+                <label class="pill" style="margin:0;">
+                  <input type="checkbox" id="chkBeep" />
+                  Beeps
+                </label>
+                <label class="pill" style="margin:0;">
+                  <input type="checkbox" id="chkVibe" />
+                  Vibrate
+                </label>
+                <label class="pill" style="margin:0;">
+                  <input type="checkbox" id="chkVoice" />
+                  Voice
+                </label>
+                <span class="right small muted" id="audioHint"></span>
+              </div>
+
               <div class="row" style="margin-top:10px;">
                 <div style="flex: 1 1 120px;">
                   <label for="cadDown">Down (sec)</label>
@@ -397,7 +414,6 @@
       "Weighted Pull-Ups (palms up)",
       "Seated Cable Row (or Landmine Row)"
     ]},
-    // UPDATED: Spine-safe muscle legs (no squats, no hip thrusts)
     B: { title: "Day B — Legs (Spine-Safe Muscle)", exercises: [
       "Spanish Squat (Cable) — Heavy",
       "Cable Squat-to-Box (Assisted)",
@@ -413,8 +429,6 @@
   };
 
   // ------------- Rep ranges + progression (edit here) -------------
-  // If reps >= repMax AND "Clean" checked => suggest +inc (lb) next time.
-  // Units: lb (default), bw, bw+
   const RULES = {
     "Cable Flye (pre-exhaust)": { repMin: 8, repMax: 12, inc: 2.5, units: "lb" },
     "Incline Barbell Press (close grip)": { repMin: 1, repMax: 3, inc: 5, units: "lb" },
@@ -422,7 +436,6 @@
     "Weighted Pull-Ups (palms up)": { repMin: 1, repMax: 4, inc: 2.5, units: "bw+" },
     "Seated Cable Row (or Landmine Row)": { repMin: 6, repMax: 10, inc: 5, units: "lb" },
 
-    // UPDATED LEGS
     "Spanish Squat (Cable) — Heavy": { repMin: 10, repMax: 20, inc: 10, units: "lb" },
     "Cable Squat-to-Box (Assisted)": { repMin: 8, repMax: 12, inc: 5, units: "lb" },
     "Standing Cable Hamstring Curl": { repMin: 8, repMax: 12, inc: 5, units: "lb" },
@@ -438,7 +451,8 @@
   const KEY_LOG = "HD_LOG_V3";
   const KEY_DAILY = "HD_DAILY_V1";
   const KEY_WEIGH = "HD_WEIGH_V1";
-  const KEY_TARGETS = "HD_TARGETS_V1"; // suggested next targets per exercise/day
+  const KEY_TARGETS = "HD_TARGETS_V1";
+  const KEY_CAD = "HD_CADENCE_V1"; // NEW: cadence prefs (beep/vibe/voice + cad numbers)
 
   const loadJSON = (k, fallback) => {
     try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(fallback)); }
@@ -532,30 +546,23 @@
   }
 
   // ---------------- Targets (auto-progress) ----------------
-  // Store suggested next targets by key = `${day}||${exercise}`
   function keyOf(day, ex) { return `${day}||${ex}`; }
-
   function getRule(ex) { return RULES[ex] || null; }
 
   function computeSuggestedNext(ex, units, weightStr, repsNum, clean) {
     const r = getRule(ex);
     if (!r) return null;
 
-    const repMax = r.repMax;
-    const inc = r.inc;
-
     if (!clean) return null;
-    if (repsNum < repMax) return null;
-    if (inc <= 0) return null;
-
-    // For bw: no weight progression suggested
+    if (repsNum < r.repMax) return null;
+    if (r.inc <= 0) return null;
     if (units === "bw") return null;
 
-    const w = units === "bw+" ? Number(weightStr || 0) : Number(weightStr || 0);
+    const w = Number(weightStr || 0);
     if (!Number.isFinite(w)) return null;
 
-    const nextW = Math.round((w + inc) * 2) / 2; // keep .5 steps possible
-    return { units, weight: String(nextW), repsTarget: r.repMin }; // keep target as low end of range
+    const nextW = Math.round((w + r.inc) * 2) / 2;
+    return { units, weight: String(nextW), repsTarget: r.repMin };
   }
 
   function setBadges(day, ex, last, targets) {
@@ -570,8 +577,6 @@
   function applyAutoFill(day, ex) {
     const last = findLastForExercise(log, day, ex);
     const r = getRule(ex);
-
-    // Auto fill with target if exists, else last, else defaults
     const t = targets[keyOf(day, ex)] || null;
 
     if (t) {
@@ -593,11 +598,52 @@
     $("lastComparison").textContent = last ? `Last: ${formatResult(last)}` : "";
   }
 
-  // ---------------- Cadence Coach ----------------
+  // ---------------- Cadence Coach (FIXED: beep + vibration + optional voice) ----------------
   let cadTimer = null;
   let cadState = { rep: 0, phase: "idle", secsLeft: 0, down: 4, up: 2, reps: 8 };
 
+  // WebAudio
+  let audioCtx = null;
+  function ensureAudio() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      $("audioHint").textContent = (audioCtx.state === "running") ? "Audio: ready" : "Audio: tap Start";
+    } catch {
+      $("audioHint").textContent = "Audio: unavailable";
+    }
+  }
+
+  function beep(freq = 880, ms = 120, gainVal = 0.07) {
+    if (!$("chkBeep").checked) return;
+    try {
+      ensureAudio();
+      if (!audioCtx || audioCtx.state !== "running") return;
+
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = "sine";
+      o.frequency.value = freq;
+
+      const now = audioCtx.currentTime;
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(gainVal, now + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + (ms/1000));
+
+      o.connect(g);
+      g.connect(audioCtx.destination);
+      o.start(now);
+      o.stop(now + (ms/1000) + 0.02);
+    } catch {}
+  }
+
+  function vibrate(pattern) {
+    if (!$("chkVibe").checked) return;
+    try { navigator.vibrate?.(pattern); } catch {}
+  }
+
   function speak(text) {
+    if (!$("chkVoice").checked) return;
     try {
       if (!("speechSynthesis" in window)) return;
       const u = new SpeechSynthesisUtterance(text);
@@ -606,6 +652,12 @@
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(u);
     } catch {}
+  }
+
+  function cue(text, { beepHz, vibe } = {}) {
+    if (beepHz) beep(beepHz, 120);
+    if (vibe) vibrate(vibe);
+    if (text) speak(text);
   }
 
   function cadSetStatus() {
@@ -624,17 +676,47 @@
     try { window.speechSynthesis?.cancel?.(); } catch {}
   }
 
+  function saveCadPrefs() {
+    saveJSON(KEY_CAD, {
+      down: $("cadDown").value,
+      up: $("cadUp").value,
+      reps: $("cadReps").value,
+      beep: $("chkBeep").checked,
+      vibe: $("chkVibe").checked,
+      voice: $("chkVoice").checked
+    });
+  }
+
+  function loadCadPrefs() {
+    const p = loadJSON(KEY_CAD, null);
+    if (!p) return;
+    if (p.down) $("cadDown").value = String(p.down);
+    if (p.up) $("cadUp").value = String(p.up);
+    if (p.reps) $("cadReps").value = String(p.reps);
+    $("chkBeep").checked = (p.beep !== undefined) ? !!p.beep : true;
+    $("chkVibe").checked = (p.vibe !== undefined) ? !!p.vibe : true;
+    $("chkVoice").checked = (p.voice !== undefined) ? !!p.voice : false;
+  }
+
   function cadStart(down, up, reps) {
     cadStop();
+    ensureAudio();
+    saveCadPrefs();
+
     cadState = { rep: 0, phase: "down", secsLeft: down, down, up, reps };
     cadSetStatus();
-    speak("Start set. Rep 1. Down.");
+
+    // Start cue
+    cue("Start. Rep one. Down.", { beepHz: 740, vibe: [60] });
 
     cadTimer = setInterval(() => {
       cadState.secsLeft -= 1;
 
       if (cadState.secsLeft > 0) {
-        if (cadState.secsLeft <= 3) speak(String(cadState.secsLeft));
+        // 3-2-1 cue (beeps regardless of voice)
+        if (cadState.secsLeft <= 3) {
+          cue(String(cadState.secsLeft), { beepHz: 880 + (cadState.secsLeft * 60), vibe: [25] });
+        }
         cadSetStatus();
         return;
       }
@@ -642,21 +724,26 @@
       if (cadState.phase === "down") {
         cadState.phase = "up";
         cadState.secsLeft = cadState.up;
-        speak("Up.");
+        cue("Up.", { beepHz: 520, vibe: [40] });
         cadSetStatus();
         return;
       }
 
       if (cadState.phase === "up") {
         cadState.rep += 1;
+
+        // Rep complete cue (quick double beep)
+        beep(960, 70); setTimeout(()=>beep(960, 70), 90);
+        vibrate([20, 40, 20]);
+
         if (cadState.rep >= cadState.reps) {
-          speak("Set complete.");
+          cue("Set complete.", { beepHz: 420, vibe: [80, 60, 80] });
           cadStop();
           return;
         }
         cadState.phase = "down";
         cadState.secsLeft = cadState.down;
-        speak(`Rep ${cadState.rep + 1}. Down.`);
+        cue(`Rep ${cadState.rep + 1}. Down.`, { beepHz: 740, vibe: [50] });
         cadSetStatus();
         return;
       }
@@ -740,10 +827,22 @@
 
   // ---------------- Init ----------------
   let log = loadJSON(KEY_LOG, []);
-  let targets = loadJSON(KEY_TARGETS, {}); // next target weights
+  let targets = loadJSON(KEY_TARGETS, {});
 
   $("dateInput").value = todayISO();
   $("weighDate").value = todayISO();
+
+  // Cadence prefs defaults (beep+vibe ON, voice OFF)
+  $("chkBeep").checked = true;
+  $("chkVibe").checked = true;
+  $("chkVoice").checked = false;
+  loadCadPrefs();
+  $("audioHint").textContent = "Audio: tap Start";
+
+  // Save cadence prefs on toggle changes
+  ["chkBeep","chkVibe","chkVoice","cadDown","cadUp","cadReps"].forEach(id => {
+    $(id).addEventListener("change", saveCadPrefs);
+  });
 
   const defaultDay = bestGuessNextDay(log);
   $("daySelect").value = defaultDay;
@@ -784,7 +883,7 @@
     applyAutoFill($("daySelect").value, $("exerciseSelect").value);
   });
 
-  // Exercise change => AUTO FILL last/target instantly
+  // Exercise change
   $("exerciseSelect").addEventListener("change", () => {
     applyAutoFill($("daySelect").value, $("exerciseSelect").value);
   });
@@ -832,7 +931,7 @@
     toast("Date set to today.");
   });
 
-  // Add log entry (with auto-progression)
+  // Add log entry
   $("btnAdd").addEventListener("click", () => {
     const day = $("daySelect").value;
     const date = $("dateInput").value || todayISO();
@@ -889,7 +988,7 @@
     applyAutoFill(day, exercise);
   });
 
-  // Quick last entry button (fills last entire entry)
+  // Quick last entry button
   $("btnQuickLast").addEventListener("click", () => {
     const day = $("daySelect").value;
     const ex = $("exerciseSelect").value;
