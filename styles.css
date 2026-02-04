@@ -1,0 +1,39 @@
+:root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+body { margin: 0; background:#0b0c10; color:#e8eaed; }
+.wrap { max-width: 1020px; margin: 0 auto; padding: 16px; }
+h1 { font-size: 20px; margin: 0 0 10px; }
+.grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (min-width: 980px){ .grid { grid-template-columns: 380px 1fr; } }
+.card { background:#11131a; border:1px solid #222638; border-radius: 14px; padding: 12px; }
+.row { display:flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+label { font-size: 12px; opacity: .85; display:block; margin-bottom: 4px; }
+select, input, textarea, button {
+  background:#0f1220; color:#e8eaed; border:1px solid #2a3050; border-radius: 10px;
+  padding: 10px; font-size: 14px;
+}
+input, select { width: 100%; }
+textarea { width: 100%; min-height: 56px; resize: vertical; }
+button { cursor:pointer; }
+button.primary { background:#1c2550; border-color:#2f3aa0; }
+button.danger { background:#3a1020; border-color:#702040; }
+.small { font-size: 12px; opacity: .8; }
+.pill { display:inline-block; padding:6px 10px; border-radius:999px; background:#0f1220; border:1px solid #2a3050; font-size:12px; }
+table { width:100%; border-collapse: collapse; }
+th, td { border-bottom: 1px solid #222638; padding: 10px 8px; vertical-align: top; }
+th { text-align:left; font-size: 12px; opacity: .85; }
+.muted { opacity:.7; }
+.right { margin-left:auto; }
+.hidden { display:none; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+.toast { margin-top:10px; font-size:12px; opacity:.85; }
+.tabs { display:flex; gap:8px; flex-wrap:wrap; margin: 10px 0 0; }
+.tabbtn { padding:8px 10px; border-radius:999px; }
+.tabbtn.active { background:#1c2550; border-color:#2f3aa0; }
+.kpi { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.kpi .box { background:#0f1220; border:1px solid #2a3050; border-radius: 12px; padding: 10px; }
+.kpi .big { font-size: 18px; font-weight: 700; }
+.hr { height:1px; background:#222638; margin: 10px 0; }
+.mini { background:#0f1220; border:1px solid #2a3050; border-radius: 12px; padding: 10px; }
+.badge { padding: 6px 10px; border-radius: 999px; border: 1px solid #2a3050; background:#0f1220; font-size:12px; }
+.ok { border-color:#2f3aa0; }
+.warn { border-color:#705020; }
