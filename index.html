@@ -6,11 +6,10 @@
   <title>Heavy Duty Log</title>
 
   <script>
-    // cache-buster build tag (update when you change files)
-    window.__BUILD__ = "HD-004";
+    window.__BUILD__ = "HD-005";
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=HD-004" />
+  <link rel="stylesheet" href="styles.css?v=HD-005" />
 </head>
 <body>
   <div class="wrap">
@@ -143,7 +142,6 @@
               <strong>Cadence Coach</strong>
               <div class="small muted" style="margin-top:6px;">
                 Tap Start and follow the cues: <b>4 seconds down</b>, <b>2 seconds up</b>, rep counted for you.
-                (Uses beep + vibration. Turn media volume up.)
               </div>
 
               <div class="row" style="margin-top:10px;">
@@ -159,6 +157,22 @@
                   <label for="cadReps">Reps to cue</label>
                   <input id="cadReps" inputmode="numeric" value="8" />
                 </div>
+              </div>
+
+              <!-- NEW: output mode toggles -->
+              <div class="row" style="margin-top:10px;">
+                <label class="pill" style="margin:0;">
+                  <input type="checkbox" id="chkCadVoice" checked />
+                  Voice
+                </label>
+                <label class="pill" style="margin:0;">
+                  <input type="checkbox" id="chkCadBeep" checked />
+                  Beep
+                </label>
+                <label class="pill" style="margin:0;">
+                  <input type="checkbox" id="chkCadVibe" checked />
+                  Vibrate
+                </label>
               </div>
 
               <div class="row" style="margin-top:10px;">
@@ -351,6 +365,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=HD-004"></script>
+  <script src="app.js?v=HD-005"></script>
 </body>
 </html>
