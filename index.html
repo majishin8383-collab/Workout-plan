@@ -6,10 +6,10 @@
   <title>Heavy Duty Log</title>
 
   <script>
-    window.__BUILD__ = "HD-005";
+    window.__BUILD__ = "HD-006";
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=HD-005" />
+  <link rel="stylesheet" href="styles.css?v=HD-006" />
 </head>
 <body>
   <div class="wrap">
@@ -159,7 +159,7 @@
                 </div>
               </div>
 
-              <!-- NEW: output mode toggles -->
+              <!-- output mode toggles -->
               <div class="row" style="margin-top:10px;">
                 <label class="pill" style="margin:0;">
                   <input type="checkbox" id="chkCadVoice" checked />
@@ -175,10 +175,19 @@
                 </label>
               </div>
 
-              <div class="row" style="margin-top:10px;">
-                <button class="primary" id="btnCadStart">Start</button>
-                <button id="btnCadStop">Stop</button>
-                <span class="right mono" id="cadStatus">Idle</span>
+              <!-- NEW: hands-free voice commands -->
+              <div class="mini" style="margin-top:10px;">
+                <div class="small muted">
+                  Hands-free: tap <b>Voice Cmd ON</b> once, then say <b>"start"</b> or <b>"stop"</b>.
+                  (Works best in Chrome. Some browsers block speech recognition.)
+                </div>
+                <div class="row" style="margin-top:10px;">
+                  <button class="primary" id="btnCadStart">Start</button>
+                  <button id="btnCadStop">Stop</button>
+                  <button id="btnVoiceCmdOn">Voice Cmd ON</button>
+                  <button id="btnVoiceCmdOff">Voice Cmd OFF</button>
+                  <span class="right mono" id="cadStatus">Idle</span>
+                </div>
               </div>
             </div>
 
@@ -365,6 +374,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=HD-005"></script>
+  <script src="app.js?v=HD-006"></script>
 </body>
 </html>
