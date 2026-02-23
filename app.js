@@ -4,17 +4,18 @@
     A: { title: "Day A — Chest & Back", exercises: [
       "Cable Flye (pre-exhaust)",
       "Incline Barbell Press (close grip)",
-      "Dumbbell Pullover",
-      "Weighted Pull-Ups (palms up)",
+      "Barbell Pullover",
+      "Weighted Pull-Ups (palms up) (or Lat Pulldown palms up)",
       "Seated Cable Row (or Landmine Row)"
     ]},
     B: { title: "Day B — Legs", exercises: [
       "Spanish Squat (cable)",
-      "Cable Leg Extension (bench)",
+      "Leg Extension (bench)",
       "Seated Cable Hamstring Curl (bench)",
       "Dip-Belt Calf Raise"
     ]},
     C: { title: "Day C — Delts & Arms", exercises: [
+      "Face Pull (rear delt)",
       "Cable Lateral Raise",
       "Barbell Curl (via cable) + Rest-Pause",
       "Triceps Pressdown",
@@ -26,15 +27,16 @@
   const RULES = {
     "Cable Flye (pre-exhaust)": { repMin: 8, repMax: 12, inc: 2.5, units: "lb" },
     "Incline Barbell Press (close grip)": { repMin: 1, repMax: 3, inc: 5, units: "lb" },
-    "Dumbbell Pullover": { repMin: 6, repMax: 8, inc: 5, units: "lb" },
-    "Weighted Pull-Ups (palms up)": { repMin: 1, repMax: 4, inc: 2.5, units: "bw+" },
+    "Barbell Pullover": { repMin: 6, repMax: 8, inc: 5, units: "lb" },
+    "Weighted Pull-Ups (palms up) (or Lat Pulldown palms up)": { repMin: 1, repMax: 4, inc: 2.5, units: "bw+" },
     "Seated Cable Row (or Landmine Row)": { repMin: 6, repMax: 10, inc: 5, units: "lb" },
 
     "Spanish Squat (cable)": { repMin: 10, repMax: 20, inc: 5, units: "lb" },
-    "Cable Leg Extension (bench)": { repMin: 8, repMax: 15, inc: 5, units: "lb" },
+    "Leg Extension (bench)": { repMin: 8, repMax: 15, inc: 5, units: "lb" },
     "Seated Cable Hamstring Curl (bench)": { repMin: 8, repMax: 12, inc: 5, units: "lb" },
     "Dip-Belt Calf Raise": { repMin: 10, repMax: 15, inc: 5, units: "lb" },
 
+    "Face Pull (rear delt)": { repMin: 12, repMax: 20, inc: 5, units: "lb" },
     "Cable Lateral Raise": { repMin: 10, repMax: 15, inc: 2.5, units: "lb" },
     "Barbell Curl (via cable) + Rest-Pause": { repMin: 1, repMax: 3, inc: 2.5, units: "lb" },
     "Triceps Pressdown": { repMin: 6, repMax: 10, inc: 5, units: "lb" },
@@ -86,8 +88,10 @@
   }
 
   function toast(msg) {
-    $("toast").textContent = msg;
-    setTimeout(()=> { if ($("toast").textContent === msg) $("toast").textContent = ""; }, 2500);
+    const t = $("toast");
+    if (!t) return;
+    t.textContent = msg;
+    setTimeout(()=> { if (t.textContent === msg) t.textContent = ""; }, 2500);
   }
 
   function updatePlanUI(day) {
@@ -224,7 +228,6 @@
   function speak(text) {
     try {
       if (!("speechSynthesis" in window)) return;
-      // cancel any queued utterances so cues stay tight
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       u.rate = 1.05;
@@ -299,6 +302,61 @@
         return;
       }
     }, 1000);
+  }
+
+  // ---------------- Voice Commands for Cadence (hands-free) ----------------
+  let vr = null;
+  let vrOn = false;
+
+  function startVoiceCommands() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return toast("Voice commands not supported in this browser.");
+
+    if (vrOn) return toast("Voice commands already ON.");
+
+    vr = new SR();
+    vr.lang = "en-US";
+    vr.continuous = true;
+    vr.interimResults = false;
+
+    vr.onresult = (evt) => {
+      const t = evt.results[evt.results.length - 1][0].transcript.trim().toLowerCase();
+
+      // stop always wins
+      if (t.includes("stop")) {
+        cadStop();
+        toast("Cadence stopped (voice).");
+        return;
+      }
+
+      if (t.includes("start")) {
+        const down = parseNum($("cadDown").value);
+        const up = parseNum($("cadUp").value);
+        const reps = parseNum($("cadReps").value);
+        if (!down || !up || !reps || down <= 0 || up <= 0 || reps <= 0) return toast("Cadence numbers invalid.");
+        cadStart(down, up, reps);
+        toast("Cadence started (voice).");
+        return;
+      }
+    };
+
+    vr.onerror = () => {};
+    vr.onend = () => {
+      // keep alive unless user turned off
+      if (vrOn) {
+        try { vr.start(); } catch {}
+      }
+    };
+
+    vrOn = true;
+    try { vr.start(); toast("Voice Cmd ON. Say 'start' or 'stop'."); }
+    catch { vrOn = false; toast("Voice Cmd failed (mic permission?)."); }
+  }
+
+  function stopVoiceCommands() {
+    vrOn = false;
+    try { vr && vr.stop(); } catch {}
+    toast("Voice Cmd OFF.");
   }
 
   // ---------------- Nutrition ----------------
@@ -380,8 +438,16 @@
   let log = loadJSON(KEY_LOG, []);
   let targets = loadJSON(KEY_TARGETS, {});
 
-  $("dateInput").value = todayISO();
-  $("weighDate").value = todayISO();
+  // Set dates immediately
+  if ($("dateInput")) $("dateInput").value = todayISO();
+  if ($("weighDate")) $("weighDate").value = todayISO();
+
+  // Keep date fields synced to real "today" (handles leaving tab open overnight)
+  setInterval(() => {
+    const t = todayISO();
+    if ($("dateInput") && $("dateInput").value !== t) $("dateInput").value = t;
+    if ($("weighDate") && $("weighDate").value !== t) $("weighDate").value = t;
+  }, 30 * 1000);
 
   const defaultDay = bestGuessNextDay(log);
   $("daySelect").value = defaultDay;
@@ -455,6 +521,10 @@
     cadStart(down, up, reps);
   });
   $("btnCadStop").addEventListener("click", () => cadStop());
+
+  // Voice commands ON/OFF
+  $("btnVoiceCmdOn").addEventListener("click", () => startVoiceCommands());
+  $("btnVoiceCmdOff").addEventListener("click", () => stopVoiceCommands());
 
   $("searchInput").addEventListener("input", () => renderLog(log));
 
